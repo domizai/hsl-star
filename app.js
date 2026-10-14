@@ -2,6 +2,7 @@ import {
   decode,
   encode,
   luminance,
+  lstarFromY,
   hueBasis,
   basisToLinear,
   toHsvHue,
@@ -15,7 +16,7 @@ import {
 
 // The selected colour is kept as an HSV hue, so switching the hue axis moves
 // the marker but never changes the colour.
-const state = { hsv: 18, l: 62, s: 0.9, mode: 'hsv', preview: false };
+const state = { hsv: 18, l: 62, s: 0.9, mode: 'hsv', preview: false, pureLine: false };
 
 const $ = (id) => document.getElementById(id);
 const field = $('field');
@@ -62,9 +63,11 @@ function renderField() {
   const image = ctx.createImageData(w, h);
   const d = image.data;
   const rows = Float64Array.from({ length: h }, (_, y) => 100 * (1 - y / (h - 1)));
+  const pureRows = new Float64Array(w);
 
   for (let x = 0; x < w; x++) {
     const basis = hueBasis(((x + 0.5) / w) * 360, { hue: state.mode });
+    pureRows[x] = (1 - lstarFromY(basis.y) / 100) * (h - 1);
     for (let y = 0; y < h; y++) {
       const [r, g, b] = basisToLinear(basis, rows[y], state.s).map(to8);
       const k = (y * w + x) * 4;
@@ -81,6 +84,20 @@ function renderField() {
     }
   }
   ctx.putImageData(image, 0, 0);
+  if (state.pureLine) drawPureLine(pureRows);
+}
+
+// Where each hue reaches full saturation without black or white mixed in.
+function drawPureLine(pureRows) {
+  ctx.save();
+  ctx.beginPath();
+  pureRows.forEach((y, x) => (x ? ctx.lineTo(x + 0.5, y) : ctx.moveTo(0.5, y)));
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+  ctx.lineWidth = 1.25;
+  ctx.setLineDash([5, 4]);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function renderUi() {
@@ -180,6 +197,11 @@ for (const radio of document.querySelectorAll('input[name="hue-mode"]')) {
     schedule(true);
   });
 }
+
+$('pure-line').addEventListener('change', (event) => {
+  state.pureLine = event.target.checked;
+  schedule(true);
+});
 
 $('preview').addEventListener('change', (event) => {
   state.preview = event.target.checked;

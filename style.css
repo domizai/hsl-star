@@ -155,6 +155,7 @@ body {
 .segmented input:checked + span { background: var(--text); color: var(--bg); }
 .segmented input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: -2px; }
 
+.checks { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 .check { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); cursor: pointer; }
 
 .panel { grid-area: panel; }
