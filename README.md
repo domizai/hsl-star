@@ -112,10 +112,10 @@ is closed form and exactly invertible.
 
 ## Library
 
-`src/color-space.js` is a dependency-free ES module.
+`src/hsl-star.js` is a dependency-free ES module.
 
 ```js
-import { toRgb, fromRgb, toHex, parseColor } from './src/color-space.js';
+import { toRgb, fromRgb, toHex, parseColor } from './src/hsl-star.js';
 
 toHex(toRgb({ h: 18, l: 62, s: 0.9 }));            // '#f7694f'
 fromRgb(parseColor('#0000ff'));                   // { h: 240, l: 32.3, s: 1 }
@@ -136,10 +136,40 @@ HSV 222° and 242° as nearly one hue, so the mapping gives them a minimum width
 of about 5° to keep them reachable. The steps elsewhere deviate from perfectly
 even OKLab steps by up to about 3°.
 
+### Optimal colour solid
+
+`src/optimal-solid.js` computes the optimal colour solid (Rösch–MacAdam
+solid) under D65 in CIELAB: every surface colour that is physically possible.
+`optimalSolidMesh()` returns its surface and `optimalSolidContours(levels)`
+horizontal cuts at given L* values. It uses the CIE 1931 2° colour-matching
+functions in the multi-lobe fit by Wyman, Sloan and Shirley (2013) and the
+CIE D65 spectrum at 5 nm. The tests check that this reproduces the D65 white
+point and that the whole sRGB solid lies inside it. It comes closest at high
+lightness around cyan, where sRGB is about 2 chroma units from the physical
+limit at L* 90.
+
+`linearToLab`, `linearToXyz` and `xyzToLab` in `src/hsl-star.js` convert to
+CIELAB with the D65 white.
+
+### Palettes
+
+`src/palette.js` interpolates between two or more colours in HSL*:
+`interpolatePalette(stops, steps, { hue })` returns `steps` colours running
+through every stop. Lightness and saturation change linearly, hue takes the
+shorter way round. A stop is hit exactly when `(steps − 1)` is divisible by
+`(stops − 1)`, for example 21 steps for 3 colours.
+
+Exports: `paletteToCss` (custom properties), `paletteToJson` (hex, RGB and
+HSL* coordinates) and `paletteToAse` (Adobe Swatch Exchange with RGB process
+colours in one group, for Illustrator and InDesign).
+
 ## Picker
 
-Static page: `index.html`, `app.js`, `style.css`. ES modules need a web
-server, so open it through one:
+Static page: `index.html`, `app.js`, `solid-view.js`, `style.css`. It has the
+hue × lightness field, a saturation × lightness square for the current hue,
+and a 3D view of the HSL* solid in CIELAB with the optimal colour solid as an
+outline. All of them stay in sync. ES modules need a web server, so open it
+through one:
 
 ```bash
 npm run serve

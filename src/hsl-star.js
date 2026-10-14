@@ -1,4 +1,4 @@
-// Equal-lightness colour space built on sRGB.
+// HSL* - Equal-lightness colour space built on sRGB.
 //
 // Coordinates:
 //   h  hue in degrees [0, 360). By default this is the HSV hue of the pure
@@ -191,6 +191,34 @@ export function toRgb(coords, options) {
 
 export function fromRgb(rgb, options) {
   return fromLinear(rgb.map(decode), options);
+}
+
+// --- CIELAB -------------------------------------------------------------------
+
+// sRGB primaries to CIE XYZ, D65 white (IEC 61966-2-1).
+const SRGB_TO_XYZ = [
+  [0.4124564, 0.3575761, 0.1804375],
+  [0.2126729, 0.7151522, 0.072175],
+  [0.0193339, 0.119192, 0.9503041],
+];
+export const D65_WHITE = [0.95047, 1, 1.08883];
+
+export function linearToXyz(rgb) {
+  return SRGB_TO_XYZ.map(([r, g, b]) => r * rgb[0] + g * rgb[1] + b * rgb[2]);
+}
+
+const labF = (t) => (t > EPSILON ? Math.cbrt(t) : (KAPPA * t + 16) / 116);
+
+// CIE XYZ to L*a*b* relative to the given white.
+export function xyzToLab([x, y, z], white = D65_WHITE) {
+  const fx = labF(x / white[0]);
+  const fy = labF(y / white[1]);
+  const fz = labF(z / white[2]);
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+export function linearToLab(rgb) {
+  return xyzToLab(linearToXyz(rgb));
 }
 
 // --- Formatting and parsing -----------------------------------------------

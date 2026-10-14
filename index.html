@@ -64,13 +64,64 @@
       </div>
       <p class="error" id="error" role="alert"></p>
 
-      <dl class="coords">
-        <div><dt>Hue</dt><dd id="out-h"></dd></div>
-        <div><dt>Lightness L*</dt><dd id="out-l"></dd></div>
-        <div><dt>Saturation</dt><dd id="out-s"></dd></div>
-      </dl>
+      <div class="coords">
+        <div class="coord">
+          <label for="in-h">Hue</label>
+          <span class="coord-input"><input type="number" id="in-h" min="0" max="360" step="0.1" inputmode="decimal"><span class="unit">°</span></span>
+        </div>
+        <p class="coord-note" id="hue-note"></p>
+        <div class="coord">
+          <label for="in-l">Lightness L*</label>
+          <span class="coord-input"><input type="number" id="in-l" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit"></span></span>
+        </div>
+        <div class="coord">
+          <label for="in-s">Saturation</label>
+          <span class="coord-input"><input type="number" id="in-s" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit">%</span></span>
+        </div>
+      </div>
+      <button type="button" class="share" data-copy="link">Copy link to this colour</button>
       <p class="status" id="status" aria-live="polite"></p>
     </aside>
+
+    <section class="solid" aria-label="Colour solid in CIELAB">
+      <h2>Colour solid in CIELAB</h2>
+      <p>The coloured body is every colour HSL* can produce, which is the sRGB gamut. Height is L*, the floor is a* and b*. The outline is the optimal colour solid: all surface colours that are physically possible under D65. Drag to rotate, double-click to reset.</p>
+      <div class="solid-wrap">
+        <canvas id="solid" tabindex="0" aria-label="3D view of the HSL* colour solid in CIELAB. Use the arrow keys to rotate."></canvas>
+        <div class="solid-labels" id="solid-labels" aria-hidden="true"></div>
+        <p class="solid-fallback" id="solid-fallback" hidden>This browser can’t show the 3D view (WebGL is unavailable).</p>
+      </div>
+      <div class="row options">
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="optimal" checked> Optimal colour solid</label>
+          <label class="check"><input type="checkbox" id="cut"> Cut at current lightness</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="palette" aria-label="Palette generator">
+      <h2>Palette</h2>
+      <p>Define two or more colours and the number of steps. The steps run through every colour in order, with even changes in lightness and saturation and the shorter way round the hue circle. Click a swatch to load it into the picker.</p>
+
+      <div class="stops" id="stops"></div>
+      <div class="row palette-controls">
+        <button type="button" id="add-stop">Add colour</button>
+        <button type="button" id="add-current">Add selected colour</button>
+        <label class="steps">Steps <input type="number" id="steps" min="2" max="256" step="1"></label>
+      </div>
+      <p class="error" id="palette-error" role="alert"></p>
+
+      <div class="swatches" id="swatches"></div>
+
+      <div class="row palette-controls">
+        <span class="label">Export</span>
+        <button type="button" data-export="css">CSS</button>
+        <button type="button" data-export="json">JSON</button>
+        <button type="button" data-export="ase">Swatches (.ase)</button>
+        <button type="button" data-export="copy-css">Copy CSS</button>
+      </div>
+      <p class="status" id="palette-status" aria-live="polite"></p>
+    </section>
   </main>
   <script type="module" src="app.js"></script>
 </body>

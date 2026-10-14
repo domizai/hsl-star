@@ -17,7 +17,7 @@ import {
   toRgbString,
   parseColor,
   HUE_MODES,
-} from '../src/color-space.js';
+} from '../src/hsl-star.js';
 
 const close = (a, b, tol, msg) =>
   assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} expected ${b}, got ${a} (tol ${tol})`);

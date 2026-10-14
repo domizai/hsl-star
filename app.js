@@ -12,18 +12,38 @@ import {
   toHex,
   toRgbString,
   parseColor,
-} from './src/color-space.js';
+} from './src/hsl-star.js';
+import { interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
+import { createSolidView } from './solid-view.js';
 
 // The selected colour is kept as an HSV hue, so switching the hue axis moves
 // the marker but never changes the colour.
-const state = { hsv: 18, l: 62, s: 0.9, mode: 'hsv', preview: false, pureLine: false };
+const state = {
+  hsv: 18,
+  l: 62,
+  s: 0.9,
+  mode: 'hsv',
+  preview: false,
+  pureLine: false,
+  optimal: true,
+  cut: false,
+};
 
 const $ = (id) => document.getElementById(id);
 const field = $('field');
 const tone = $('tone');
 const sat = $('sat');
 const hexInput = $('hex');
+const coordInputs = { h: $('in-h'), l: $('in-l'), s: $('in-s') };
 const rgbInput = $('rgb');
+
+let solid = null;
+try {
+  solid = createSolidView($('solid'), $('solid-labels'));
+} catch (error) {
+  console.error(error);
+}
+if (!solid) $('solid-fallback').hidden = false;
 
 const DECODE_8BIT = Float64Array.from({ length: 256 }, (_, i) => decode(i / 255));
 const to8 = (c) => Math.round(encode(c) * 255);
@@ -143,6 +163,16 @@ function placeMarker(marker, x, y, hex) {
 }
 
 function renderUi() {
+  solid?.update({
+    h: state.hsv,
+    l: state.l,
+    s: state.s,
+    optimal: state.optimal,
+    cut: state.cut,
+    pureLine: state.pureLine,
+    preview: state.preview,
+  });
+
   const rgb = currentRgb();
   const hex = toHex(rgb);
   const rgbText = toRgbString(rgb);
@@ -172,11 +202,78 @@ function renderUi() {
   if (document.activeElement !== hexInput) hexInput.value = hex;
   if (document.activeElement !== rgbInput) rgbInput.value = rgbText;
 
-  $('out-h').textContent =
-    state.mode === 'hsv' ? `${axis.toFixed(1)}°` : `${axis.toFixed(1)}° (HSV ${state.hsv.toFixed(1)}°)`;
-  $('out-l').textContent = state.l.toFixed(1);
-  $('out-s').textContent = `${(state.s * 100).toFixed(1)}%`;
+  // Show the hue on the current axis; the perceptual axis also gets the HSV value.
+  const shown = { h: axis, l: state.l, s: state.s * 100 };
+  for (const [key, input] of Object.entries(coordInputs)) {
+    if (document.activeElement !== input) input.value = shown[key].toFixed(1);
+  }
+  $('hue-note').textContent = state.mode === 'hsv' ? '' : `HSV ${state.hsv.toFixed(1)}°`;
+
+  scheduleHashWrite();
 }
+
+// --- Shareable link ------------------------------------------------------------------
+//
+// The URL hash holds the selected colour as "h,l,s": HSV hue in degrees, L*,
+// saturation in percent, e.g. #236.1,75.4,100.0. The hue is always the HSV
+// hue, so a link means the same colour whichever hue axis the viewer uses.
+
+const formatHash = () => `#${[state.hsv, state.l, state.s * 100].map((v) => v.toFixed(1)).join(',')}`;
+
+function parseHash(hash) {
+  const parts = decodeURIComponent(hash.replace(/^#/, '')).split(',').map((p) => p.trim());
+  if (parts.length !== 3 || parts.some((p) => p === '')) return null;
+  const [h, l, s] = parts.map(Number);
+  if (![h, l, s].every(Number.isFinite)) return null;
+  if (h < 0 || h > 360 || l < 0 || l > 100 || s < 0 || s > 100) return null;
+  return { hsv: h % 360, l, s: s / 100 };
+}
+
+function applyHash() {
+  const coords = parseHash(location.hash);
+  if (!coords) return false;
+  Object.assign(state, coords);
+  return true;
+}
+
+// The hash is written when an interaction ends, not while it's going on:
+// on release after dragging a picker or the saturation slider, and after a
+// short pause for keys and typed values (held arrow keys repeat quickly, and
+// browsers limit how often a page may update its history).
+let dragging = false;
+let hashTimer = 0;
+
+function writeHash() {
+  clearTimeout(hashTimer);
+  hashTimer = 0;
+  const hash = formatHash();
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+}
+
+function scheduleHashWrite() {
+  if (dragging) return;
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(writeHash, 250);
+}
+
+function trackDrag(element) {
+  element.addEventListener('pointerdown', () => (dragging = true));
+}
+
+// Listen on the window, so a release outside the element still counts.
+for (const type of ['pointerup', 'pointercancel']) {
+  window.addEventListener(type, () => {
+    if (!dragging) return;
+    dragging = false;
+    writeHash();
+  });
+}
+
+window.addEventListener('hashchange', () => {
+  if (applyHash()) redrawAll();
+});
+
+const shareLink = () => location.href.split('#')[0] + formatHash();
 
 const resizer = new ResizeObserver(() => {
   for (const canvas of [field, tone]) {
@@ -214,6 +311,10 @@ function makeDraggable(canvas, onPick) {
     if (wrap.hasPointerCapture(event.pointerId)) pick(event);
   });
 }
+
+trackDrag(field.parentElement);
+trackDrag(tone.parentElement);
+trackDrag(sat);
 
 makeDraggable(field, (x, y) => {
   // Stop just short of 360 so the marker never wraps to the left edge.
@@ -284,12 +385,23 @@ $('preview').addEventListener('change', (event) => {
   redrawAll();
 });
 
+$('optimal').addEventListener('change', (event) => {
+  state.optimal = event.target.checked;
+  schedule();
+});
+
+$('cut').addEventListener('change', (event) => {
+  state.cut = event.target.checked;
+  schedule();
+});
+
 // --- Hex and RGB input -------------------------------------------------------------
 
 function clearError() {
   $('error').textContent = '';
-  hexInput.removeAttribute('aria-invalid');
-  rgbInput.removeAttribute('aria-invalid');
+  for (const input of [hexInput, rgbInput, ...Object.values(coordInputs)]) {
+    input.removeAttribute('aria-invalid');
+  }
 }
 
 function commit(input) {
@@ -301,12 +413,16 @@ function commit(input) {
     return;
   }
   clearError();
+  selectColour(rgb);
+  input.blur();
+}
+
+function selectColour(rgb) {
   const coords = fromRgb(rgb);
   // Greys have no hue: keep the current one so the marker stays in place.
   if (coords.s > 1e-6) state.hsv = coords.h;
   state.l = coords.l;
   state.s = coords.s;
-  input.blur();
   redrawAll();
 }
 
@@ -324,6 +440,51 @@ for (const input of [hexInput, rgbInput]) {
   });
   input.addEventListener('change', () => commit(input));
   input.addEventListener('input', clearError);
+}
+
+// --- HSL* coordinate input ---------------------------------------------------------
+
+const COORD_LIMITS = {
+  h: { max: 360, message: 'Enter a hue from 0 to 360.' },
+  l: { max: 100, message: 'Enter a lightness from 0 to 100.' },
+  s: { max: 100, message: 'Enter a saturation from 0 to 100.' },
+};
+
+function commitCoord(key) {
+  const input = coordInputs[key];
+  const value = input.value.trim() === '' ? NaN : Number(input.value);
+  if (!Number.isFinite(value) || value < 0 || value > COORD_LIMITS[key].max) {
+    input.setAttribute('aria-invalid', 'true');
+    $('error').textContent = COORD_LIMITS[key].message;
+    return;
+  }
+  clearError();
+  if (key === 'h') state.hsv = toHsvHue(value % 360, state.mode);
+  if (key === 'l') state.l = value;
+  if (key === 's') state.s = value / 100;
+  redrawAll();
+}
+
+for (const [key, input] of Object.entries(coordInputs)) {
+  input.addEventListener('change', () => commitCoord(key));
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      commitCoord(key);
+      if (!input.hasAttribute('aria-invalid')) input.blur();
+    }
+    if (event.key === 'Escape') {
+      // Restore the current value first, so the change event on blur
+      // doesn't commit the discarded text.
+      const current = { h: axisHue(), l: state.l, s: state.s * 100 }[key];
+      input.value = current.toFixed(1);
+      clearError();
+      input.blur();
+    }
+  });
+  input.addEventListener('input', () => {
+    input.removeAttribute('aria-invalid');
+    $('error').textContent = '';
+  });
 }
 
 // --- Copy --------------------------------------------------------------------------
@@ -350,16 +511,171 @@ async function copyText(text) {
 for (const button of document.querySelectorAll('[data-copy]')) {
   button.addEventListener('click', async () => {
     const rgb = currentRgb();
-    const text = button.dataset.copy === 'hex' ? toHex(rgb) : toRgbString(rgb);
+    const kind = button.dataset.copy;
+    const text = kind === 'hex' ? toHex(rgb) : kind === 'rgb' ? toRgbString(rgb) : shareLink();
     const ok = await copyText(text);
+    button.dataset.label ??= button.textContent;
     button.textContent = ok ? 'Copied' : 'Failed';
-    $('status').textContent = ok ? `Copied ${text}` : 'Copying isn’t available in this browser.';
+    $('status').textContent = ok ? (kind === 'link' ? 'Link copied' : `Copied ${text}`) : 'Copying isn’t available in this browser.';
     clearTimeout(statusTimer);
     statusTimer = setTimeout(() => {
-      for (const b of document.querySelectorAll('[data-copy]')) b.textContent = 'Copy';
+      for (const b of document.querySelectorAll('[data-copy]')) {
+        if (b.dataset.label) b.textContent = b.dataset.label;
+      }
       $('status').textContent = '';
     }, 1500);
   });
 }
 
+// --- Palette -----------------------------------------------------------------------
+
+const palette = {
+  stops: ['#1d3557', '#f7694f', '#f4e9b0'],
+  steps: 20,
+  colours: [],
+};
+const MAX_STEPS = 256;
+
+function renderStops() {
+  const list = $('stops');
+  list.replaceChildren(
+    ...palette.stops.map((hex, i) => {
+      const row = document.createElement('div');
+      row.className = 'stop';
+      const rgb = parseColor(hex);
+
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'stop-swatch';
+      swatch.style.background = rgb ? toHex(rgb) : 'transparent';
+      swatch.setAttribute('aria-label', `Load colour ${i + 1} into the picker`);
+      swatch.addEventListener('click', () => rgb && selectColour(rgb));
+
+      const input = document.createElement('input');
+      input.value = hex;
+      input.spellcheck = false;
+      input.autocomplete = 'off';
+      input.setAttribute('aria-label', `Colour ${i + 1}`);
+      if (!rgb) input.setAttribute('aria-invalid', 'true');
+      input.addEventListener('change', () => {
+        palette.stops[i] = input.value.trim();
+        renderStops();
+        renderPalette();
+      });
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'stop-remove';
+      remove.textContent = 'Remove';
+      remove.setAttribute('aria-label', `Remove colour ${i + 1}`);
+      remove.addEventListener('click', () => {
+        if (palette.stops.length <= 2) {
+          $('palette-error').textContent = 'A palette needs at least two colours.';
+          return;
+        }
+        palette.stops.splice(i, 1);
+        renderStops();
+        renderPalette();
+      });
+
+      row.append(swatch, input, remove);
+      return row;
+    }),
+  );
+}
+
+function renderPalette() {
+  const error = $('palette-error');
+  const out = $('swatches');
+  const stops = palette.stops.map(parseColor);
+  const steps = palette.steps;
+  let message = '';
+  if (stops.some((c) => !c)) message = 'Enter every colour as hex or RGB, like #3a7bd5.';
+  else if (!Number.isInteger(steps) || steps < 2 || steps > MAX_STEPS) message = `Use between 2 and ${MAX_STEPS} steps.`;
+  else if (steps < stops.length) message = 'Use at least as many steps as colours.';
+
+  error.textContent = message;
+  $('steps').toggleAttribute('aria-invalid', message.includes('steps'));
+  if (message) {
+    palette.colours = [];
+    out.replaceChildren();
+    return;
+  }
+
+  palette.colours = interpolatePalette(stops, steps, { hue: state.mode });
+  out.replaceChildren(
+    ...palette.colours.map((rgb) => {
+      const hex = toHex(rgb);
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'swatch-item';
+      item.title = `${hex}, click to load into the picker`;
+      item.innerHTML = `<span class="chip"></span><span class="hex">${hex}</span>`;
+      item.querySelector('.chip').style.background = hex;
+      item.addEventListener('click', () => selectColour(rgb));
+      return item;
+    }),
+  );
+}
+
+$('add-stop').addEventListener('click', () => {
+  palette.stops.push(palette.stops[palette.stops.length - 1]);
+  renderStops();
+  renderPalette();
+});
+
+$('add-current').addEventListener('click', () => {
+  palette.stops.push(toHex(currentRgb()));
+  renderStops();
+  renderPalette();
+});
+
+$('steps').value = palette.steps;
+$('steps').addEventListener('input', (event) => {
+  palette.steps = Number(event.target.value);
+  renderPalette();
+});
+
+// The hue axis decides which way hues blend, so follow it.
+for (const radio of document.querySelectorAll('input[name="hue-mode"]')) {
+  radio.addEventListener('change', renderPalette);
+}
+
+function download(filename, data, type) {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function paletteStatus(text) {
+  $('palette-status').textContent = text;
+  clearTimeout(paletteStatus.timer);
+  paletteStatus.timer = setTimeout(() => ($('palette-status').textContent = ''), 2000);
+}
+
+for (const button of document.querySelectorAll('[data-export]')) {
+  button.addEventListener('click', async () => {
+    if (!palette.colours.length) return;
+    const kind = button.dataset.export;
+    const colours = palette.colours;
+    if (kind === 'css') download('palette.css', paletteToCss(colours), 'text/css');
+    if (kind === 'json') download('palette.json', paletteToJson(colours, { hue: state.mode }), 'application/json');
+    if (kind === 'ase') download('palette.ase', paletteToAse(colours), 'application/octet-stream');
+    if (kind === 'copy-css') {
+      const ok = await copyText(paletteToCss(colours));
+      paletteStatus(ok ? 'CSS copied' : 'Copying isn’t available in this browser.');
+      return;
+    }
+    paletteStatus(`Downloaded palette.${kind}`);
+  });
+}
+
+applyHash();
+renderStops();
+renderPalette();
 redrawAll();

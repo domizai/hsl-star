@@ -1,10 +1,10 @@
 {
-  "name": "color-space",
+  "name": "hsl-star",
   "version": "0.1.0",
   "description": "Equal-lightness colour space and colour picker built on sRGB",
   "type": "module",
   "private": true,
-  "main": "src/color-space.js",
+  "main": "src/hsl-star.js",
   "scripts": {
     "test": "node --test",
     "serve": "python3 -m http.server 8000"
