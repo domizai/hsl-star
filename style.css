@@ -92,8 +92,8 @@ body {
 
 .row { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
 
-.sat label { width: 76px; color: var(--text-2); }
-.sat output { width: 52px; text-align: right; font-family: var(--mono); font-size: 13px; }
+.sat label { flex: none; color: var(--text-2); }
+.sat output { flex: none; width: 4ch; text-align: right; font-family: var(--mono); font-size: 13px; }
 
 #sat {
   flex: 1;
