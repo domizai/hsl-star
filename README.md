@@ -1,8 +1,102 @@
-# Equal-lightness colour space
+# HSL*
 
 A colour space and picker on top of sRGB in which every horizontal row has the
 same perceived lightness. Converted to grey, each row of the picker is one
 flat tone.
+
+## Background
+
+### The problem with HSV
+
+In an HSV picker, hue runs across and value (V) runs up and down. Colours with
+the same V don't look equally light. Measured as CIE L* (0 = black,
+100 = white):
+
+| | Grey | Red | Yellow | Green | Cyan | Blue | Magenta |
+|---|---|---|---|---|---|---|---|
+| V = 1.0 | 100 | 53 | 97 | 88 | 91 | 32 | 60 |
+| V = 0.5 | 53 | 25 | 52 | 46 | 48 | 13 | 30 |
+
+The top row of HSV alone spans almost the whole lightness range, from blue at
+32 to yellow at 97. Converted to grey, an HSV picker looks like a mountain range,
+not a set of even bands.
+
+### The idea
+
+Keep the HSV hue axis, but move every colour up or down so that each row has
+one lightness. Each pure hue then sits at its own lightness: yellow near the
+top, blue near the bottom. Below that point the colour is darkened towards
+black, as in HSV. Above it, where HSV has no fully saturated colours, it is
+mixed with white. This fills the whole rectangle from black to white with no
+gaps, and a grayscale conversion of the picker gives perfectly even bands.
+
+Saturation then mixes that vivid colour with the grey of the same lightness,
+so lightness stays fixed while saturation changes.
+
+### Prior art
+
+The geometry isn't new. HSL* is a close relative of **HCY** (hue, chroma,
+luma) by Kuzma Shapran, published as shader code by
+[Chilliant](https://www.chilliant.com/rgb2hsv.html). HCY also uses the HSV
+hue and scales chroma relative to the luma of the pure hue with the same
+formula, so for each hue the set of colours is the same.
+
+HSL* differs in how the lightness is computed:
+
+| | HCY (Chilliant) | HSL* |
+|---|---|---|
+| Computed on | RGB as given, usually gamma-encoded | Linear light |
+| Weights | Rec. 601 (0.299, 0.587, 0.114) | sRGB / Rec. 709 (0.2126, 0.7152, 0.0722) |
+| Vertical axis | Luma Y | CIE L* |
+| Hue axis | HSV hue | HSV hue, optionally re-spaced to even OKLab hue |
+
+Used the usual way, on gamma-encoded sRGB, HCY rows are only roughly even.
+At full chroma, the row at Y = 0.5 ranges from L* 53 to 76 across hues. HSL*
+rows have the same L* to within floating-point precision. The price is a few
+power functions per pixel, which matters in a shader but not in a picker.
+
+### HCY or HSL*?
+
+HCY is better when speed and simplicity count:
+
+- It needs only a handful of multiplications per colour, with no power
+  functions or cube roots. That's what it was made for: pixel shaders that
+  run on every pixel of every frame.
+- It works directly on gamma-encoded values, so it fits into an existing
+  pipeline without converting to linear light and back.
+- The code is shorter, and several implementations already exist.
+
+HSL* is better when the lightness has to be right:
+
+- Rows are exactly equal in lightness. HCY rows can differ by up to about
+  23 L* across hues.
+- The luminance weights match the sRGB primaries. Rec. 601 weights come from
+  standard-definition TV.
+- The vertical axis is CIE L*, so equal steps look like equal changes in
+  lightness. Equal steps of luma crowd together at the dark end.
+- The grey preview matches a CIE L* conversion, so lightness relationships
+  you see in the picker hold up when a design is converted to grey.
+- The hue axis can optionally be re-spaced to even OKLab hue steps.
+
+Both share the same weaknesses: tints drift slightly in perceived hue, very
+saturated colours look a little brighter than their L* suggests, and both are
+limited to sRGB.
+
+Other related work:
+
+- [KDE's HCY](https://phabricator.kde.org/D27017) and
+  [Krita's HSY′ selector](https://docs.krita.org/reference_manual/dockers/advanced_color_selector.html)
+  also work in linear RGB.
+- [HSLuv](https://hsluv.org/math) uses the same idea of saturation as a
+  share of the maximum sRGB chroma at a given lightness and hue, but is built
+  on CIELUV, so its hue axis is different.
+- [Okhsl](https://bottosson.github.io/posts/colorpicker/) by Björn Ottosson
+  (2021) applies the principle to OKLab. It keeps perceived hue more constant
+  when a colour is tinted or shaded, which HSL* doesn't (see Known limits).
+
+HSL* sits between these: exact CIE L* rows that match a standard grayscale
+conversion, the familiar HSV hue axis, and the pure sRGB primaries at full
+saturation.
 
 ## Coordinates
 
