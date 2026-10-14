@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Equal-lightness picker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <header class="intro">
+      <h1>Equal-lightness picker</h1>
+      <p>Hue runs left to right, perceived lightness (CIE L*) top to bottom. Every row converts to the same grey.</p>
+    </header>
+
+    <section class="picker" aria-label="Colour field">
+      <div class="field-wrap" id="field-wrap">
+        <canvas id="field" tabindex="0" role="slider" aria-label="Hue and lightness. Use the arrow keys to move, hold Shift for larger steps."></canvas>
+        <div class="marker" id="marker" aria-hidden="true"></div>
+      </div>
+      <div class="axis" aria-hidden="true">
+        <span>0°</span><span>60°</span><span>120°</span><span>180°</span><span>240°</span><span>300°</span><span>360°</span>
+      </div>
+
+      <div class="row sat">
+        <label for="sat">Saturation</label>
+        <input type="range" id="sat" min="0" max="100" step="0.1">
+        <output id="sat-out" for="sat"></output>
+      </div>
+
+      <div class="row options">
+        <div class="segmented" role="radiogroup" aria-label="Hue axis">
+          <label><input type="radio" name="hue-mode" value="hsv" checked><span>HSV hue</span></label>
+          <label><input type="radio" name="hue-mode" value="oklab"><span>Even perceived hue</span></label>
+        </div>
+        <label class="check"><input type="checkbox" id="preview"> Show lightness only</label>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Selected colour">
+      <div class="swatch" id="swatch"></div>
+
+      <div class="value">
+        <label for="hex">Hex</label>
+        <div class="value-row">
+          <input id="hex" spellcheck="false" autocomplete="off">
+          <button type="button" data-copy="hex">Copy</button>
+        </div>
+      </div>
+      <div class="value">
+        <label for="rgb">RGB</label>
+        <div class="value-row">
+          <input id="rgb" spellcheck="false" autocomplete="off">
+          <button type="button" data-copy="rgb">Copy</button>
+        </div>
+      </div>
+      <p class="error" id="error" role="alert"></p>
+
+      <dl class="coords">
+        <div><dt>Hue</dt><dd id="out-h"></dd></div>
+        <div><dt>Lightness L*</dt><dd id="out-l"></dd></div>
+        <div><dt>Saturation</dt><dd id="out-s"></dd></div>
+      </dl>
+      <p class="status" id="status" aria-live="polite"></p>
+    </aside>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
