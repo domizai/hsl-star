@@ -14,9 +14,9 @@
     </header>
 
     <section class="picker" aria-label="Colour field">
-      <div class="field-wrap" id="field-wrap">
-        <canvas id="field" tabindex="0" role="slider" aria-label="Hue and lightness. Use the arrow keys to move, hold Shift for larger steps."></canvas>
-        <div class="marker" id="marker" aria-hidden="true"></div>
+      <div class="pick-wrap">
+        <canvas class="pick" id="field" tabindex="0" role="slider" aria-label="Hue and lightness. Use the arrow keys to move, hold Shift for larger steps."></canvas>
+        <div class="marker" id="field-marker" aria-hidden="true"></div>
       </div>
       <div class="axis" aria-hidden="true">
         <span>0°</span><span>60°</span><span>120°</span><span>180°</span><span>240°</span><span>300°</span><span>360°</span>
@@ -41,6 +41,11 @@
     </section>
 
     <aside class="panel" aria-label="Selected colour">
+      <div class="pick-wrap">
+        <canvas class="pick" id="tone" tabindex="0" role="slider" aria-label="Saturation and lightness of the current hue. Use the arrow keys to move, hold Shift for larger steps."></canvas>
+        <div class="marker" id="tone-marker" aria-hidden="true"></div>
+      </div>
+      <div class="tone-axis" aria-hidden="true"><span>Grey</span><span>Saturation</span><span>Vivid</span></div>
       <div class="swatch" id="swatch"></div>
 
       <div class="value">

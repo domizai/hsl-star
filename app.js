@@ -20,9 +20,7 @@ const state = { hsv: 18, l: 62, s: 0.9, mode: 'hsv', preview: false, pureLine: f
 
 const $ = (id) => document.getElementById(id);
 const field = $('field');
-const ctx = field.getContext('2d');
-const wrap = $('field-wrap');
-const marker = $('marker');
+const tone = $('tone');
 const sat = $('sat');
 const hexInput = $('hex');
 const rgbInput = $('rgb');
@@ -40,36 +38,44 @@ const axisHue = () => fromHsvHue(state.hsv, state.mode);
 const currentRgb = () => toRgb({ h: state.hsv, l: state.l, s: state.s });
 
 // --- Rendering --------------------------------------------------------------
+//
+// Two pickers share the state:
+//   field  hue × lightness at the current saturation
+//   tone   saturation × lightness at the current hue
 
 let fieldDirty = true;
+let toneDirty = true;
+let toneHue = null;
 let frame = 0;
 
-function schedule(redrawField = false) {
-  fieldDirty ||= redrawField;
+function schedule({ field = false, tone = false } = {}) {
+  fieldDirty ||= field;
+  toneDirty ||= tone;
   if (!frame) frame = requestAnimationFrame(draw);
 }
+
+const redrawAll = () => schedule({ field: true, tone: true });
 
 function draw() {
   frame = 0;
   if (fieldDirty) renderField();
-  fieldDirty = false;
+  if (toneDirty || toneHue !== state.hsv) renderTone();
+  fieldDirty = toneDirty = false;
   renderUi();
 }
 
-function renderField() {
-  const w = field.width;
-  const h = field.height;
-  if (!w || !h) return;
-  const image = ctx.createImageData(w, h);
+// Fill a canvas pixel by pixel. column(x) returns a function of y that gives
+// the linear RGB colour, so per-column work is done once.
+function paint(canvas, column) {
+  const w = canvas.width;
+  const h = canvas.height;
+  const context = canvas.getContext('2d');
+  const image = context.createImageData(w, h);
   const d = image.data;
-  const rows = Float64Array.from({ length: h }, (_, y) => 100 * (1 - y / (h - 1)));
-  const pureRows = new Float64Array(w);
-
   for (let x = 0; x < w; x++) {
-    const basis = hueBasis(((x + 0.5) / w) * 360, { hue: state.mode });
-    pureRows[x] = (1 - lstarFromY(basis.y) / 100) * (h - 1);
+    const colourAt = column(x);
     for (let y = 0; y < h; y++) {
-      const [r, g, b] = basisToLinear(basis, rows[y], state.s).map(to8);
+      const [r, g, b] = colourAt(y).map(to8);
       const k = (y * w + x) * 4;
       if (state.preview) {
         // Grey of the 8-bit colour actually shown, not of the ideal value.
@@ -83,21 +89,57 @@ function renderField() {
       d[k + 3] = 255;
     }
   }
-  ctx.putImageData(image, 0, 0);
-  if (state.pureLine) drawPureLine(pureRows);
+  context.putImageData(image, 0, 0);
+  return context;
 }
 
-// Where each hue reaches full saturation without black or white mixed in.
-function drawPureLine(pureRows) {
-  ctx.save();
-  ctx.beginPath();
-  pureRows.forEach((y, x) => (x ? ctx.lineTo(x + 0.5, y) : ctx.moveTo(0.5, y)));
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
-  ctx.lineWidth = 1.25;
-  ctx.setLineDash([5, 4]);
-  ctx.stroke();
-  ctx.restore();
+const lightnessRows = (h) => Float64Array.from({ length: h }, (_, y) => 100 * (1 - y / (h - 1)));
+const rowOf = (l, h) => (1 - l / 100) * (h - 1);
+
+function renderField() {
+  const { width: w, height: h } = field;
+  if (!w || !h) return;
+  const rows = lightnessRows(h);
+  const pureRows = new Float64Array(w);
+  const context = paint(field, (x) => {
+    const basis = hueBasis(((x + 0.5) / w) * 360, { hue: state.mode });
+    pureRows[x] = rowOf(lstarFromY(basis.y), h);
+    return (y) => basisToLinear(basis, rows[y], state.s);
+  });
+  if (state.pureLine) drawPureLine(context, pureRows);
+}
+
+function renderTone() {
+  toneHue = state.hsv;
+  const { width: w, height: h } = tone;
+  if (!w || !h) return;
+  const rows = lightnessRows(h);
+  const basis = hueBasis(state.hsv);
+  const context = paint(tone, (x) => {
+    const s = x / (w - 1);
+    return (y) => basisToLinear(basis, rows[y], s);
+  });
+  // The pure hue sits on the right edge; this row is where shades turn into tints.
+  if (state.pureLine) drawPureLine(context, new Float64Array(w).fill(rowOf(lstarFromY(basis.y), h)));
+}
+
+// Where the hue reaches full saturation without black or white mixed in.
+function drawPureLine(context, rows) {
+  context.save();
+  context.beginPath();
+  rows.forEach((y, x) => (x ? context.lineTo(x + 0.5, y) : context.moveTo(0.5, y)));
+  context.lineJoin = 'round';
+  context.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+  context.lineWidth = 1.25;
+  context.setLineDash([5, 4]);
+  context.stroke();
+  context.restore();
+}
+
+function placeMarker(marker, x, y, hex) {
+  marker.style.left = `${x * 100}%`;
+  marker.style.top = `${y * 100}%`;
+  marker.style.background = hex;
 }
 
 function renderUi() {
@@ -106,12 +148,15 @@ function renderUi() {
   const rgbText = toRgbString(rgb);
   const axis = axisHue();
 
-  marker.style.left = `${(axis / 360) * 100}%`;
-  marker.style.top = `${(1 - state.l / 100) * 100}%`;
-  marker.style.background = hex;
+  placeMarker($('field-marker'), axis / 360, 1 - state.l / 100, hex);
+  placeMarker($('tone-marker'), state.s, 1 - state.l / 100, hex);
   field.setAttribute(
     'aria-valuetext',
     `Hue ${axis.toFixed(0)} degrees, lightness ${state.l.toFixed(0)}, ${hex}`,
+  );
+  tone.setAttribute(
+    'aria-valuetext',
+    `Saturation ${Math.round(state.s * 100)} percent, lightness ${state.l.toFixed(0)}, ${hex}`,
   );
 
   const stops = [];
@@ -133,36 +178,54 @@ function renderUi() {
   $('out-s').textContent = `${(state.s * 100).toFixed(1)}%`;
 }
 
-new ResizeObserver(() => {
-  const w = Math.round(field.clientWidth);
-  const h = Math.round(field.clientHeight);
-  if (w !== field.width || h !== field.height) {
-    field.width = w;
-    field.height = h;
-    schedule(true);
+const resizer = new ResizeObserver(() => {
+  for (const canvas of [field, tone]) {
+    const w = Math.round(canvas.clientWidth);
+    const h = Math.round(canvas.clientHeight);
+    if (w !== canvas.width || h !== canvas.height) {
+      canvas.width = w;
+      canvas.height = h;
+      schedule(canvas === field ? { field: true } : { tone: true });
+    }
   }
-}).observe(field);
+});
+resizer.observe(field);
+resizer.observe(tone);
 
-// --- Field interaction -------------------------------------------------------
+// --- Picker interaction --------------------------------------------------------
 
-function pickAt(event) {
-  const rect = field.getBoundingClientRect();
-  // Stop just short of 360 so the marker never wraps to the left edge.
-  const x = clamp((event.clientX - rect.left) / rect.width, 0, 0.9999);
-  const y = clamp((event.clientY - rect.top) / rect.height, 0, 1);
-  state.hsv = toHsvHue(x * 360, state.mode);
-  state.l = (1 - y) * 100;
-  clearError();
-  schedule();
+// Pointer dragging on a picker; onPick gets x and y as fractions of its size.
+function makeDraggable(canvas, onPick) {
+  const wrap = canvas.parentElement;
+  const pick = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    onPick(
+      clamp((event.clientX - rect.left) / rect.width, 0, 1),
+      clamp((event.clientY - rect.top) / rect.height, 0, 1),
+    );
+    clearError();
+  };
+  wrap.addEventListener('pointerdown', (event) => {
+    wrap.setPointerCapture(event.pointerId);
+    canvas.focus({ preventScroll: true });
+    pick(event);
+  });
+  wrap.addEventListener('pointermove', (event) => {
+    if (wrap.hasPointerCapture(event.pointerId)) pick(event);
+  });
 }
 
-wrap.addEventListener('pointerdown', (event) => {
-  wrap.setPointerCapture(event.pointerId);
-  field.focus({ preventScroll: true });
-  pickAt(event);
+makeDraggable(field, (x, y) => {
+  // Stop just short of 360 so the marker never wraps to the left edge.
+  state.hsv = toHsvHue(Math.min(x, 0.9999) * 360, state.mode);
+  state.l = (1 - y) * 100;
+  schedule();
 });
-wrap.addEventListener('pointermove', (event) => {
-  if (wrap.hasPointerCapture(event.pointerId)) pickAt(event);
+
+makeDraggable(tone, (x, y) => {
+  state.s = x;
+  state.l = (1 - y) * 100;
+  schedule({ field: true });
 });
 
 field.addEventListener('keydown', (event) => {
@@ -180,11 +243,24 @@ field.addEventListener('keydown', (event) => {
   schedule();
 });
 
+tone.addEventListener('keydown', (event) => {
+  const step = event.shiftKey ? 10 : 1;
+  switch (event.key) {
+    case 'ArrowLeft': state.s = clamp(state.s - step / 100, 0, 1); break;
+    case 'ArrowRight': state.s = clamp(state.s + step / 100, 0, 1); break;
+    case 'ArrowUp': state.l = clamp(state.l + step, 0, 100); break;
+    case 'ArrowDown': state.l = clamp(state.l - step, 0, 100); break;
+    default: return;
+  }
+  event.preventDefault();
+  schedule({ field: event.key === 'ArrowLeft' || event.key === 'ArrowRight' });
+});
+
 // --- Controls ------------------------------------------------------------------
 
 sat.addEventListener('input', () => {
   state.s = Number(sat.value) / 100;
-  schedule(true);
+  schedule({ field: true });
 });
 
 for (const radio of document.querySelectorAll('input[name="hue-mode"]')) {
@@ -194,18 +270,18 @@ for (const radio of document.querySelectorAll('input[name="hue-mode"]')) {
     try {
       localStorage.setItem('hue-mode', state.mode);
     } catch {}
-    schedule(true);
+    schedule({ field: true });
   });
 }
 
 $('pure-line').addEventListener('change', (event) => {
   state.pureLine = event.target.checked;
-  schedule(true);
+  redrawAll();
 });
 
 $('preview').addEventListener('change', (event) => {
   state.preview = event.target.checked;
-  schedule(true);
+  redrawAll();
 });
 
 // --- Hex and RGB input -------------------------------------------------------------
@@ -231,7 +307,7 @@ function commit(input) {
   state.l = coords.l;
   state.s = coords.s;
   input.blur();
-  schedule(true);
+  redrawAll();
 }
 
 for (const input of [hexInput, rgbInput]) {
@@ -286,4 +362,4 @@ for (const button of document.querySelectorAll('[data-copy]')) {
   });
 }
 
-schedule(true);
+redrawAll();
