@@ -47,7 +47,20 @@ body {
   gap: 24px 40px;
 }
 
-.intro { grid-area: intro; }
+.intro { grid-area: intro; position: relative; padding-right: 48px; }
+.github {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+}
+.github:hover { color: var(--text); background: var(--surface); }
+.github:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .intro h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
 .intro p { margin: 0; color: var(--text-2); max-width: 60ch; }
 
@@ -267,8 +280,18 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .palette h2 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
 .palette > p { margin: 0 0 16px; color: var(--text-2); max-width: 72ch; }
 
-.stops { display: flex; flex-wrap: wrap; gap: 12px; }
+.stops { position: relative; display: flex; flex-wrap: wrap; gap: 12px; }
 .stop { display: flex; gap: 6px; align-items: center; }
+.stop-swatch { cursor: grab; touch-action: none; }
+.stop.dragging { position: relative; z-index: 5; opacity: 0.85; }
+.stop.dragging .stop-swatch { cursor: grabbing; }
+.stop-drop-marker {
+  position: absolute;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--focus);
+  pointer-events: none;
+}
 .stop-swatch {
   width: 36px;
   min-width: 36px;

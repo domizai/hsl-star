@@ -554,10 +554,13 @@ function renderStops() {
       swatch.type = 'button';
       swatch.className = 'stop-swatch';
       swatch.style.background = rgb ? hslStar.toHex(rgb) : 'transparent';
-      swatch.setAttribute('aria-label', `Edit colour ${i + 1}`);
+      swatch.setAttribute('aria-label', `Edit colour ${i + 1}. Press Alt and an arrow key to move it.`);
       swatch.setAttribute('aria-haspopup', 'dialog');
       swatch.setAttribute('aria-expanded', 'false');
+      swatch.title = 'Click to edit, drag to reorder';
       swatch.addEventListener('click', () => {
+        // A drag ends with a click; it shouldn't open the editor.
+        if (stopDrag.justDropped) return;
         if (miniPicker.isOpenFor(swatch)) {
           miniPicker.close();
           return;
@@ -594,10 +597,101 @@ function renderStops() {
         renderPalette();
       });
 
+      enableStopDrag(swatch, row, i);
+      swatch.addEventListener('keydown', (event) => {
+        if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+        event.preventDefault();
+        const to = i + (event.key === 'ArrowLeft' ? -1 : 1);
+        if (to < 0 || to >= palette.stops.length) return;
+        moveStop(i, to);
+        $('stops').children[to].querySelector('.stop-swatch').focus();
+      });
+
       row.append(swatch, input, remove);
       return row;
     }),
   );
+}
+
+function moveStop(from, to) {
+  const [stop] = palette.stops.splice(from, 1);
+  palette.stops.splice(to, 0, stop);
+  renderStops();
+  renderPalette();
+}
+
+// --- Reordering colours by dragging their swatch -------------------------------------
+//
+// Pointer events rather than native drag and drop, so it works with touch and
+// a click (no movement) still opens the editor.
+
+const DRAG_THRESHOLD = 4;
+const stopDrag = { justDropped: false };
+const dropMarker = document.createElement('div');
+dropMarker.className = 'stop-drop-marker';
+
+// Index (0 … n) before which a colour dropped at (x, y) would be inserted.
+function insertionIndex(rows, x, y) {
+  const index = rows.findIndex((row) => {
+    const r = row.getBoundingClientRect();
+    return y < r.top || (y <= r.bottom && x < r.left + r.width / 2);
+  });
+  return index === -1 ? rows.length : index;
+}
+
+function enableStopDrag(swatch, row, index) {
+  let start = null;
+  let dragging = false;
+  let newIndex = index;
+
+  const rows = () => [...$('stops').querySelectorAll('.stop')];
+
+  swatch.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    // Capture right away, so a fast first move outside the swatch still counts.
+    swatch.setPointerCapture(event.pointerId);
+  });
+
+  swatch.addEventListener('pointermove', (event) => {
+    if (!start || event.pointerId !== start.id) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (!dragging) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      dragging = true;
+      miniPicker.close({ restoreFocus: false });
+      row.classList.add('dragging');
+      $('stops').appendChild(dropMarker);
+    }
+    row.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    // The dragged row follows the pointer, so leave it out: the index among
+    // the remaining rows is the new position.
+    const others = rows().filter((r) => r !== row);
+    newIndex = insertionIndex(others, event.clientX, event.clientY);
+    const list = $('stops').getBoundingClientRect();
+    const target = others[Math.min(newIndex, others.length - 1)].getBoundingClientRect();
+    const x = newIndex < others.length ? target.left - 7 : target.right + 5;
+    dropMarker.style.left = `${x - list.left}px`;
+    dropMarker.style.top = `${target.top - list.top}px`;
+    dropMarker.style.height = `${target.height}px`;
+  });
+
+  const finish = (event, cancelled) => {
+    if (!start || event.pointerId !== start.id) return;
+    start = null;
+    if (!dragging) return;
+    dragging = false;
+    row.classList.remove('dragging');
+    row.style.transform = '';
+    dropMarker.remove();
+    stopDrag.justDropped = true;
+    setTimeout(() => (stopDrag.justDropped = false));
+    if (!cancelled && newIndex !== index) moveStop(index, newIndex);
+  };
+  swatch.addEventListener('pointerup', (event) => finish(event, false));
+  swatch.addEventListener('pointercancel', (event) => finish(event, true));
 }
 
 function renderPalette() {
