@@ -1,6 +1,7 @@
 import * as hslStar from './src/hsl-star.js';
-import { interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
+import { paletteGradient, interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
 import { createSolidView } from './solid-view.js';
+import { createMiniPicker } from './mini-picker.js';
 
 // The selected colour is kept as an HSV hue, so switching the hue axis moves
 // the marker but never changes the colour.
@@ -522,7 +523,26 @@ const palette = {
 };
 const MAX_STEPS = 256;
 
+// Popover for editing a palette colour. Edits update the colour's row in
+// place, so the popover keeps its anchor while you drag.
+let editing = null;
+const miniPicker = createMiniPicker({
+  getHueMode: () => state.mode,
+  onChange: (rgb) => {
+    if (!editing) return;
+    const hex = hslStar.toHex(rgb);
+    palette.stops[editing.index] = hex;
+    editing.input.value = hex;
+    editing.input.removeAttribute('aria-invalid');
+    editing.swatch.style.background = hex;
+    renderPalette();
+  },
+  onLoad: (rgb) => selectColour(rgb),
+});
+
 function renderStops() {
+  miniPicker.close({ restoreFocus: false });
+  editing = null;
   const list = $('stops');
   list.replaceChildren(
     ...palette.stops.map((hex, i) => {
@@ -534,8 +554,18 @@ function renderStops() {
       swatch.type = 'button';
       swatch.className = 'stop-swatch';
       swatch.style.background = rgb ? hslStar.toHex(rgb) : 'transparent';
-      swatch.setAttribute('aria-label', `Load colour ${i + 1} into the picker`);
-      swatch.addEventListener('click', () => rgb && selectColour(rgb));
+      swatch.setAttribute('aria-label', `Edit colour ${i + 1}`);
+      swatch.setAttribute('aria-haspopup', 'dialog');
+      swatch.setAttribute('aria-expanded', 'false');
+      swatch.addEventListener('click', () => {
+        if (miniPicker.isOpenFor(swatch)) {
+          miniPicker.close();
+          return;
+        }
+        editing = { index: i, swatch, input };
+        // An invalid entry opens on mid grey; picking a colour replaces it.
+        miniPicker.open(swatch, hslStar.parseColor(input.value) ?? [0.5, 0.5, 0.5]);
+      });
 
       const input = document.createElement('input');
       input.value = hex;
@@ -584,11 +614,15 @@ function renderPalette() {
   $('steps').toggleAttribute('aria-invalid', message.includes('steps'));
   if (message) {
     palette.colours = [];
+    palette.validStops = null;
     out.replaceChildren();
+    renderGradients();
     return;
   }
 
   palette.colours = interpolatePalette(stops, steps, { hue: state.mode });
+  palette.validStops = stops;
+  renderGradients();
   out.replaceChildren(
     ...palette.colours.map((rgb) => {
       const hex = hslStar.toHex(rgb);
@@ -603,6 +637,50 @@ function renderPalette() {
     }),
   );
 }
+
+// The palette as a continuous gradient and as a stepped bar. Both are drawn
+// pixel by pixel, because a CSS gradient would blend in sRGB, not in HSL*.
+const gradientCanvas = $('gradient');
+const steppedCanvas = $('stepped');
+
+function sizeCanvas(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(canvas.clientWidth * dpr));
+  canvas.height = Math.max(1, Math.round(canvas.clientHeight * dpr));
+  return canvas.getContext('2d');
+}
+
+// In the lightness preview, show the grey each colour converts to.
+const shown = (rgb) =>
+  state.preview ? Array(3).fill(hslStar.encode(hslStar.luminance(rgb.map(hslStar.decode)))) : rgb;
+
+function renderGradients() {
+  const stops = palette.validStops;
+  for (const canvas of [gradientCanvas, steppedCanvas]) sizeCanvas(canvas);
+  if (!stops) return;
+
+  const ctx = gradientCanvas.getContext('2d');
+  const { width: w, height: h } = gradientCanvas;
+  const colourAt = paletteGradient(stops, { hue: state.mode });
+  const image = ctx.createImageData(w, h);
+  for (let x = 0; x < w; x++) {
+    const [r, g, b] = hslStar.to8bit(shown(colourAt(x / Math.max(1, w - 1))));
+    for (let y = 0; y < h; y++) image.data.set([r, g, b, 255], (y * w + x) * 4);
+  }
+  ctx.putImageData(image, 0, 0);
+
+  const stepped = steppedCanvas.getContext('2d');
+  const n = palette.colours.length;
+  palette.colours.forEach((rgb, i) => {
+    const x0 = Math.round((i / n) * steppedCanvas.width);
+    const x1 = Math.round(((i + 1) / n) * steppedCanvas.width);
+    stepped.fillStyle = hslStar.toHex(shown(rgb));
+    stepped.fillRect(x0, 0, x1 - x0, steppedCanvas.height);
+  });
+}
+
+new ResizeObserver(renderGradients).observe(gradientCanvas);
+$('preview').addEventListener('change', renderGradients);
 
 $('add-stop').addEventListener('click', () => {
   palette.stops.push(palette.stops[palette.stops.length - 1]);
@@ -624,7 +702,10 @@ $('steps').addEventListener('input', (event) => {
 
 // The hue axis decides which way hues blend, so follow it.
 for (const radio of document.querySelectorAll('input[name="hue-mode"]')) {
-  radio.addEventListener('change', renderPalette);
+  radio.addEventListener('change', () => {
+    renderPalette();
+    miniPicker.refresh();
+  });
 }
 
 function download(filename, data, type) {

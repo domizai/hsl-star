@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HSL*</title>
+  <title>HSL* picker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app">
     <header class="intro">
-      <h1>HSL*</h1>
-      <p>Hue runs left to right, perceived lightness (CIE L*) top to bottom. Every row converts to the same grey.</p>
+      <h1>HSL* picker</h1>
+      <p>A perceptual colour space built on sRGB that measures lightness as it is perceived (CIE L*).</p>
     </header>
 
     <section class="picker" aria-label="Colour field">
@@ -83,6 +83,37 @@
       <p class="status" id="status" aria-live="polite"></p>
     </aside>
 
+    <section class="palette" aria-label="Palette generator">
+      <h2>Palette</h2>
+      <p>Blend two or more colours in even steps of lightness and saturation. Click a swatch to load it into the picker.</p>
+
+      <div class="stops" id="stops"></div>
+      <div class="row palette-controls">
+        <button type="button" id="add-stop">Add colour</button>
+        <button type="button" id="add-current">Add selected colour</button>
+        <label class="steps">Steps <input type="number" id="steps" min="2" max="256" step="1"></label>
+      </div>
+      <p class="error" id="palette-error" role="alert"></p>
+
+      <div class="gradients" aria-hidden="true">
+        <p class="gradient-label">Continuous</p>
+        <canvas class="gradient" id="gradient"></canvas>
+        <p class="gradient-label">Steps</p>
+        <canvas class="gradient" id="stepped"></canvas>
+      </div>
+
+      <div class="swatches" id="swatches"></div>
+
+      <div class="row palette-controls">
+        <span class="label">Export</span>
+        <button type="button" data-export="css">CSS</button>
+        <button type="button" data-export="json">JSON</button>
+        <button type="button" data-export="ase">Swatches (.ase)</button>
+        <button type="button" data-export="copy-css">Copy CSS</button>
+      </div>
+      <p class="status" id="palette-status" aria-live="polite"></p>
+    </section>
+
     <section class="solid" aria-label="Colour solid in CIELAB">
       <h2>Colour solid in CIELAB</h2>
       <p>The coloured body is every colour HSL* can produce, which is the sRGB gamut. Height is L*, the floor is a* and b*. The outline is the optimal colour solid: all surface colours that are physically possible under D65. Drag to rotate, double-click to reset.</p>
@@ -99,29 +130,6 @@
       </div>
     </section>
 
-    <section class="palette" aria-label="Palette generator">
-      <h2>Palette</h2>
-      <p>Define two or more colours and the number of steps. The steps run through every colour in order, with even changes in lightness and saturation and the shorter way round the hue circle. Click a swatch to load it into the picker.</p>
-
-      <div class="stops" id="stops"></div>
-      <div class="row palette-controls">
-        <button type="button" id="add-stop">Add colour</button>
-        <button type="button" id="add-current">Add selected colour</button>
-        <label class="steps">Steps <input type="number" id="steps" min="2" max="256" step="1"></label>
-      </div>
-      <p class="error" id="palette-error" role="alert"></p>
-
-      <div class="swatches" id="swatches"></div>
-
-      <div class="row palette-controls">
-        <span class="label">Export</span>
-        <button type="button" data-export="css">CSS</button>
-        <button type="button" data-export="json">JSON</button>
-        <button type="button" data-export="ase">Swatches (.ase)</button>
-        <button type="button" data-export="copy-css">Copy CSS</button>
-      </div>
-      <p class="status" id="palette-status" aria-live="polite"></p>
-    </section>
   </main>
   <script type="module" src="app.js"></script>
 </body>

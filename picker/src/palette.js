@@ -3,12 +3,12 @@
 
 import * as hslStar from './hsl-star.js';
 
-// Evenly spaced colours from the first stop to the last, passing through
-// every stop. Lightness and saturation change linearly between stops, hue
-// takes the shorter way round. Colours are gamma-encoded sRGB in [0, 1].
-export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
+// A continuous gradient through two or more colours. Returns a function of
+// t in [0, 1] that gives gamma-encoded sRGB in [0, 1]; the stops sit at even
+// intervals. Lightness and saturation change linearly between stops, hue
+// takes the shorter way round.
+export function paletteGradient(stops, { hue = 'hsv' } = {}) {
   if (stops.length < 2) throw new Error('A palette needs at least two colours.');
-  if (steps < stops.length) throw new Error('Use at least as many steps as colours.');
   const coords = stops.map((rgb) => hslStar.fromRgb(rgb, { hue }));
 
   // Greys have no hue: borrow it from a neighbour so they don't swing to red.
@@ -19,9 +19,8 @@ export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
   });
 
   const segments = stops.length - 1;
-  const colours = [];
-  for (let i = 0; i < steps; i++) {
-    const t = (i / (steps - 1)) * segments;
+  return (position) => {
+    const t = Math.min(Math.max(position, 0), 1) * segments;
     const k = Math.min(Math.floor(t), segments - 1);
     const f = t - k;
     const a = coords[k];
@@ -29,11 +28,18 @@ export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
     let dh = b.h - a.h;
     if (dh > 180) dh -= 360;
     if (dh < -180) dh += 360;
-    colours.push(
-      hslStar.toRgb({ h: a.h + f * dh, l: a.l + f * (b.l - a.l), s: a.s + f * (b.s - a.s) }, { hue }),
-    );
-  }
+    return hslStar.toRgb({ h: a.h + f * dh, l: a.l + f * (b.l - a.l), s: a.s + f * (b.s - a.s) }, { hue });
+  };
+}
+
+// Evenly spaced colours from the first stop to the last, sampled from the
+// gradient above.
+export function interpolatePalette(stops, steps, options) {
+  if (steps < stops.length) throw new Error('Use at least as many steps as colours.');
+  const colourAt = paletteGradient(stops, options);
+  const colours = Array.from({ length: steps }, (_, i) => colourAt(i / (steps - 1)));
   // Snap the stops themselves to exactly the colours given.
+  const segments = stops.length - 1;
   for (let k = 0; k <= segments; k++) {
     const i = (k / segments) * (steps - 1);
     if (Number.isInteger(i)) colours[i] = stops[k];
