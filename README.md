@@ -6,7 +6,7 @@ A perceptual colour space built on sRGB that measures lightness as it is perceiv
 
 In an HSL picker, hues at the same height don't look equally light. HSL* keeps the familiar HSL hue axis but moves every colour up or down, so that each row of the picker has one perceived lightness. 
 
-![HSV compared with HSL*](assets/hsv-vs-hsl-star.png)
+![HSL compared with HSL*](assets/hsl-vs-hsl-star.png)
 
 *Top: HSL at full saturation, and the same plane converted to grey. Bottom: HSL* at full saturation, and its grey conversion: every row is one even grey.*
 
