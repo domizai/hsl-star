@@ -4,11 +4,11 @@ A perceptual colour space built on sRGB that measures lightness as it is perceiv
 
 ## Motivation
 
-In an HSV or HSL picker, hue runs across and value or lightness runs up and down. Colours at the same height don't look equally light. HSL* keeps the familiar HSV/HSL hue axis but moves every colour up or down, so that each row of the picker has one perceived lightness. Each pure hue then sits at its own lightness: yellow near the top, blue near the bottom.
+In an HSL picker, hues at the same height don't look equally light. HSL* keeps the familiar HSL hue axis but moves every colour up or down, so that each row of the picker has one perceived lightness. 
 
-![HSV compared with HSL*](docs/hsv-vs-hsl-star.png)
+![HSV compared with HSL*](assets/hsv-vs-hsl-star.png)
 
-*Top: HSV at full saturation, and the same plane converted to grey. Bottom: HSL* at full saturation, and its grey conversion: every row is one even grey.*
+*Top: HSL at full saturation, and the same plane converted to grey. Bottom: HSL* at full saturation, and its grey conversion: every row is one even grey.*
 
 ## The HSL* colour space
 
@@ -56,20 +56,6 @@ When to choose which colour space:
 - **HCY** is the right choice when speed counts, for example in pixel shaders.
 - **Okhsl** is the right choice when hue should look as constant as possible across tints and shades.
 - **HSL\*** is the right choice when equal lightness has to hold exactly: each row converts to one grey, as in grayscale conversion and black-and-white printing.
-
-## Library
-
-`picker/src/hsl-star.js` is a dependency-free ES module. Import it as a namespace, so every call says where it comes from:
-
-```js
-import * as hslStar from './src/hsl-star.js';
-
-hslStar.toHex(hslStar.toRgb({ h: 18, l: 62, s: 0.9 }));    // '#f7694f'
-hslStar.fromRgb(hslStar.parseColor('#0000ff'));           // { h: 240, l: 32.3, s: 1 }
-hslStar.toRgb({ h: 120, l: 50, s: 1 }, { hue: 'oklab' }); // perceptual hue axis
-```
-
-`toRgb` and `fromRgb` work with gamma-encoded sRGB channels in [0, 1], `toLinear` and `fromLinear` with linear light. To render a whole plane, compute `hueBasis(h)` once per column and call `basisToLinear` per pixel.
 
 ## Colour picker
 
