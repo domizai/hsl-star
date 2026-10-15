@@ -1,18 +1,4 @@
-import {
-  decode,
-  encode,
-  luminance,
-  lstarFromY,
-  hueBasis,
-  basisToLinear,
-  toHsvHue,
-  fromHsvHue,
-  toRgb,
-  fromRgb,
-  toHex,
-  toRgbString,
-  parseColor,
-} from './src/hsl-star.js';
+import * as hslStar from './src/hsl-star.js';
 import { interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
 import { createSolidView } from './solid-view.js';
 
@@ -45,8 +31,8 @@ try {
 }
 if (!solid) $('solid-fallback').hidden = false;
 
-const DECODE_8BIT = Float64Array.from({ length: 256 }, (_, i) => decode(i / 255));
-const to8 = (c) => Math.round(encode(c) * 255);
+const DECODE_8BIT = Float64Array.from({ length: 256 }, (_, i) => hslStar.decode(i / 255));
+const to8 = (c) => Math.round(hslStar.encode(c) * 255);
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 try {
@@ -54,8 +40,8 @@ try {
   if (saved === 'hsv' || saved === 'oklab') state.mode = saved;
 } catch {}
 
-const axisHue = () => fromHsvHue(state.hsv, state.mode);
-const currentRgb = () => toRgb({ h: state.hsv, l: state.l, s: state.s });
+const axisHue = () => hslStar.fromHsvHue(state.hsv, state.mode);
+const currentRgb = () => hslStar.toRgb({ h: state.hsv, l: state.l, s: state.s });
 
 // --- Rendering --------------------------------------------------------------
 //
@@ -99,7 +85,7 @@ function paint(canvas, column) {
       const k = (y * w + x) * 4;
       if (state.preview) {
         // Grey of the 8-bit colour actually shown, not of the ideal value.
-        const grey = to8(luminance([DECODE_8BIT[r], DECODE_8BIT[g], DECODE_8BIT[b]]));
+        const grey = to8(hslStar.luminance([DECODE_8BIT[r], DECODE_8BIT[g], DECODE_8BIT[b]]));
         d[k] = d[k + 1] = d[k + 2] = grey;
       } else {
         d[k] = r;
@@ -122,9 +108,9 @@ function renderField() {
   const rows = lightnessRows(h);
   const pureRows = new Float64Array(w);
   const context = paint(field, (x) => {
-    const basis = hueBasis(((x + 0.5) / w) * 360, { hue: state.mode });
-    pureRows[x] = rowOf(lstarFromY(basis.y), h);
-    return (y) => basisToLinear(basis, rows[y], state.s);
+    const basis = hslStar.hueBasis(((x + 0.5) / w) * 360, { hue: state.mode });
+    pureRows[x] = rowOf(hslStar.lstarFromY(basis.y), h);
+    return (y) => hslStar.basisToLinear(basis, rows[y], state.s);
   });
   if (state.pureLine) drawPureLine(context, pureRows);
 }
@@ -134,13 +120,13 @@ function renderTone() {
   const { width: w, height: h } = tone;
   if (!w || !h) return;
   const rows = lightnessRows(h);
-  const basis = hueBasis(state.hsv);
+  const basis = hslStar.hueBasis(state.hsv);
   const context = paint(tone, (x) => {
     const s = x / (w - 1);
-    return (y) => basisToLinear(basis, rows[y], s);
+    return (y) => hslStar.basisToLinear(basis, rows[y], s);
   });
   // The pure hue sits on the right edge; this row is where shades turn into tints.
-  if (state.pureLine) drawPureLine(context, new Float64Array(w).fill(rowOf(lstarFromY(basis.y), h)));
+  if (state.pureLine) drawPureLine(context, new Float64Array(w).fill(rowOf(hslStar.lstarFromY(basis.y), h)));
 }
 
 // Where the hue reaches full saturation without black or white mixed in.
@@ -174,8 +160,8 @@ function renderUi() {
   });
 
   const rgb = currentRgb();
-  const hex = toHex(rgb);
-  const rgbText = toRgbString(rgb);
+  const hex = hslStar.toHex(rgb);
+  const rgbText = hslStar.toRgbString(rgb);
   const axis = axisHue();
 
   placeMarker($('field-marker'), axis / 360, 1 - state.l / 100, hex);
@@ -191,7 +177,7 @@ function renderUi() {
 
   const stops = [];
   for (let i = 0; i <= 10; i++) {
-    stops.push(toHex(toRgb({ h: state.hsv, l: state.l, s: i / 10 })));
+    stops.push(hslStar.toHex(hslStar.toRgb({ h: state.hsv, l: state.l, s: i / 10 })));
   }
   sat.style.setProperty('--track', `linear-gradient(to right, ${stops.join(', ')})`);
   sat.style.setProperty('--thumb', hex);
@@ -318,7 +304,7 @@ trackDrag(sat);
 
 makeDraggable(field, (x, y) => {
   // Stop just short of 360 so the marker never wraps to the left edge.
-  state.hsv = toHsvHue(Math.min(x, 0.9999) * 360, state.mode);
+  state.hsv = hslStar.toHsvHue(Math.min(x, 0.9999) * 360, state.mode);
   state.l = (1 - y) * 100;
   schedule();
 });
@@ -340,7 +326,7 @@ field.addEventListener('keydown', (event) => {
     default: return;
   }
   event.preventDefault();
-  state.hsv = toHsvHue(axis, state.mode);
+  state.hsv = hslStar.toHsvHue(axis, state.mode);
   schedule();
 });
 
@@ -405,7 +391,7 @@ function clearError() {
 }
 
 function commit(input) {
-  const rgb = parseColor(input.value);
+  const rgb = hslStar.parseColor(input.value);
   if (!rgb) {
     input.setAttribute('aria-invalid', 'true');
     $('error').textContent =
@@ -418,7 +404,7 @@ function commit(input) {
 }
 
 function selectColour(rgb) {
-  const coords = fromRgb(rgb);
+  const coords = hslStar.fromRgb(rgb);
   // Greys have no hue: keep the current one so the marker stays in place.
   if (coords.s > 1e-6) state.hsv = coords.h;
   state.l = coords.l;
@@ -433,7 +419,7 @@ for (const input of [hexInput, rgbInput]) {
       // Restore the current value first, so the change event on blur
       // doesn't commit the discarded text.
       const rgb = currentRgb();
-      input.value = input === hexInput ? toHex(rgb) : toRgbString(rgb);
+      input.value = input === hexInput ? hslStar.toHex(rgb) : hslStar.toRgbString(rgb);
       clearError();
       input.blur();
     }
@@ -459,7 +445,7 @@ function commitCoord(key) {
     return;
   }
   clearError();
-  if (key === 'h') state.hsv = toHsvHue(value % 360, state.mode);
+  if (key === 'h') state.hsv = hslStar.toHsvHue(value % 360, state.mode);
   if (key === 'l') state.l = value;
   if (key === 's') state.s = value / 100;
   redrawAll();
@@ -512,7 +498,7 @@ for (const button of document.querySelectorAll('[data-copy]')) {
   button.addEventListener('click', async () => {
     const rgb = currentRgb();
     const kind = button.dataset.copy;
-    const text = kind === 'hex' ? toHex(rgb) : kind === 'rgb' ? toRgbString(rgb) : shareLink();
+    const text = kind === 'hex' ? hslStar.toHex(rgb) : kind === 'rgb' ? hslStar.toRgbString(rgb) : shareLink();
     const ok = await copyText(text);
     button.dataset.label ??= button.textContent;
     button.textContent = ok ? 'Copied' : 'Failed';
@@ -542,12 +528,12 @@ function renderStops() {
     ...palette.stops.map((hex, i) => {
       const row = document.createElement('div');
       row.className = 'stop';
-      const rgb = parseColor(hex);
+      const rgb = hslStar.parseColor(hex);
 
       const swatch = document.createElement('button');
       swatch.type = 'button';
       swatch.className = 'stop-swatch';
-      swatch.style.background = rgb ? toHex(rgb) : 'transparent';
+      swatch.style.background = rgb ? hslStar.toHex(rgb) : 'transparent';
       swatch.setAttribute('aria-label', `Load colour ${i + 1} into the picker`);
       swatch.addEventListener('click', () => rgb && selectColour(rgb));
 
@@ -587,7 +573,7 @@ function renderStops() {
 function renderPalette() {
   const error = $('palette-error');
   const out = $('swatches');
-  const stops = palette.stops.map(parseColor);
+  const stops = palette.stops.map(hslStar.parseColor);
   const steps = palette.steps;
   let message = '';
   if (stops.some((c) => !c)) message = 'Enter every colour as hex or RGB, like #3a7bd5.';
@@ -605,7 +591,7 @@ function renderPalette() {
   palette.colours = interpolatePalette(stops, steps, { hue: state.mode });
   out.replaceChildren(
     ...palette.colours.map((rgb) => {
-      const hex = toHex(rgb);
+      const hex = hslStar.toHex(rgb);
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'swatch-item';
@@ -625,7 +611,7 @@ $('add-stop').addEventListener('click', () => {
 });
 
 $('add-current').addEventListener('click', () => {
-  palette.stops.push(toHex(currentRgb()));
+  palette.stops.push(hslStar.toHex(currentRgb()));
   renderStops();
   renderPalette();
 });

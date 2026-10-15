@@ -3,7 +3,7 @@
 //
 // World coordinates: x = a*, y = L* − 50, z = −b*, all divided by 100.
 
-import { toLinear, toRgb, linearToLab, encode, yFromLstar, pureHue, decode } from './src/hsl-star.js';
+import * as hslStar from './src/hsl-star.js';
 import { optimalSolidContours } from './src/optimal-solid.js';
 
 const HUE_STEPS = 180;
@@ -94,7 +94,7 @@ function viewMatrix(yaw, pitch, distance) {
 
 // --- Geometry -----------------------------------------------------------------
 
-const greyOf = (l) => encode(yFromLstar(l));
+const greyOf = (l) => hslStar.encode(hslStar.yFromLstar(l));
 
 // Outer surface of the HSL* solid: saturation 1 over every hue and lightness.
 function surfaceGeometry() {
@@ -108,8 +108,8 @@ function surfaceGeometry() {
     for (let i = 0; i < cols; i++) {
       const h = (i / HUE_STEPS) * 360;
       const k = (j * cols + i) * 3;
-      lab.set(linearToLab(toLinear({ h, l, s: 1 })), k);
-      colour.set(toRgb({ h, l, s: 1 }), k);
+      lab.set(hslStar.linearToLab(hslStar.toLinear({ h, l, s: 1 })), k);
+      colour.set(hslStar.toRgb({ h, l, s: 1 }), k);
       grey.fill(greyOf(l), k, k + 3);
     }
   }
@@ -128,10 +128,10 @@ function capGeometry(l) {
     for (let i = 0; i < cols; i++) {
       const h = (i / HUE_STEPS) * 360;
       const k = (j * cols + i) * 3;
-      const labValue = linearToLab(toLinear({ h, l, s }));
+      const labValue = hslStar.linearToLab(hslStar.toLinear({ h, l, s }));
       labValue[0] = l;
       lab.set(labValue, k);
-      colour.set(toRgb({ h, l, s }), k);
+      colour.set(hslStar.toRgb({ h, l, s }), k);
       grey.fill(greyOf(l), k, k + 3);
     }
   }
@@ -154,7 +154,7 @@ function gridIndices(cols, rows) {
 function pureHueLine() {
   const lab = new Float32Array((HUE_STEPS + 1) * 3);
   for (let i = 0; i <= HUE_STEPS; i++) {
-    lab.set(linearToLab(pureHue((i / HUE_STEPS) * 360).map(decode)), i * 3);
+    lab.set(hslStar.linearToLab(hslStar.pureHue((i / HUE_STEPS) * 360).map(hslStar.decode)), i * 3);
   }
   return lab;
 }
@@ -345,13 +345,13 @@ export function createSolidView(canvas, labelLayer) {
 
     // The current colour stays visible even inside the solid.
     gl.disable(gl.DEPTH_TEST);
-    const marker = linearToLab(toLinear(settings));
+    const marker = hslStar.linearToLab(hslStar.toLinear(settings));
     gl.bindBuffer(gl.ARRAY_BUFFER, markerBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(marker), gl.DYNAMIC_DRAW);
     gl.useProgram(markerProgram.p);
     gl.uniformMatrix4fv(markerProgram.uMvp, false, mvp);
     gl.uniform1f(markerProgram.uPointSize, 18 * dpr);
-    const fill = settings.preview ? Array(3).fill(greyOf(settings.l)) : toRgb(settings);
+    const fill = settings.preview ? Array(3).fill(greyOf(settings.l)) : hslStar.toRgb(settings);
     gl.uniform3fv(markerProgram.uFill, fill);
     bindAttribute(markerProgram.aLab, markerBuffer);
     gl.drawArrays(gl.POINTS, 0, 1);

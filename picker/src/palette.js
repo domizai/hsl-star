@@ -1,7 +1,7 @@
 // Palettes interpolated in HSL* between two or more colours, and export as
 // CSS, JSON and Adobe Swatch Exchange (.ase, for Illustrator and InDesign).
 
-import { fromRgb, toRgb, toHex, to8bit } from './hsl-star.js';
+import * as hslStar from './hsl-star.js';
 
 // Evenly spaced colours from the first stop to the last, passing through
 // every stop. Lightness and saturation change linearly between stops, hue
@@ -9,7 +9,7 @@ import { fromRgb, toRgb, toHex, to8bit } from './hsl-star.js';
 export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
   if (stops.length < 2) throw new Error('A palette needs at least two colours.');
   if (steps < stops.length) throw new Error('Use at least as many steps as colours.');
-  const coords = stops.map((rgb) => fromRgb(rgb, { hue }));
+  const coords = stops.map((rgb) => hslStar.fromRgb(rgb, { hue }));
 
   // Greys have no hue: borrow it from a neighbour so they don't swing to red.
   coords.forEach((c, i) => {
@@ -30,7 +30,7 @@ export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
     if (dh > 180) dh -= 360;
     if (dh < -180) dh += 360;
     colours.push(
-      toRgb({ h: a.h + f * dh, l: a.l + f * (b.l - a.l), s: a.s + f * (b.s - a.s) }, { hue }),
+      hslStar.toRgb({ h: a.h + f * dh, l: a.l + f * (b.l - a.l), s: a.s + f * (b.s - a.s) }, { hue }),
     );
   }
   // Snap the stops themselves to exactly the colours given.
@@ -41,20 +41,20 @@ export function interpolatePalette(stops, steps, { hue = 'hsv' } = {}) {
   return colours;
 }
 
-const swatchName = (i, rgb) => `${String(i + 1).padStart(2, '0')} ${toHex(rgb)}`;
+const swatchName = (i, rgb) => `${String(i + 1).padStart(2, '0')} ${hslStar.toHex(rgb)}`;
 
 export function paletteToCss(colours, prefix = 'palette') {
-  const lines = colours.map((rgb, i) => `  --${prefix}-${i + 1}: ${toHex(rgb)};`);
+  const lines = colours.map((rgb, i) => `  --${prefix}-${i + 1}: ${hslStar.toHex(rgb)};`);
   return `:root {\n${lines.join('\n')}\n}\n`;
 }
 
 export function paletteToJson(colours, { hue = 'hsv' } = {}) {
   const data = colours.map((rgb, i) => {
-    const { h, l, s } = fromRgb(rgb, { hue });
+    const { h, l, s } = hslStar.fromRgb(rgb, { hue });
     return {
       name: swatchName(i, rgb),
-      hex: toHex(rgb),
-      rgb: to8bit(rgb),
+      hex: hslStar.toHex(rgb),
+      rgb: hslStar.to8bit(rgb),
       hslStar: { h: round(h, 2), l: round(l, 2), s: round(s, 4) },
     };
   });
@@ -95,7 +95,7 @@ export function paletteToAse(colours, groupName = 'HSL* palette') {
     body.set([0x52, 0x47, 0x42, 0x20], o); // 'RGB '
     o += 4;
     // Write the 8-bit values, so the swatch matches the hex code exactly.
-    to8bit(rgb).forEach((v, c) => view.setFloat32(o + c * 4, v / 255));
+    hslStar.to8bit(rgb).forEach((v, c) => view.setFloat32(o + c * 4, v / 255));
     view.setUint16(o + 12, 2); // normal (process) colour
     return { type: 0x0001, body };
   };

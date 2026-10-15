@@ -10,7 +10,7 @@
 // Together they reproduce the D65 white point to four decimals
 // (x 0.3127, y 0.3291).
 
-import { xyzToLab } from './hsl-star.js';
+import * as hslStar from './hsl-star.js';
 
 const lobe = (l, mu, s1, s2) => {
   const t = (l - mu) / (l < mu ? s1 : s2);
@@ -78,7 +78,7 @@ export function optimalSolidMesh() {
     for (let i = 0; i < cols; i++) {
       const a = prefix[i];
       const b = prefix[i + w];
-      const lab = xyzToLab([b[0] - a[0], b[1] - a[1], b[2] - a[2]], white);
+      const lab = hslStar.xyzToLab([b[0] - a[0], b[1] - a[1], b[2] - a[2]], white);
       positions.set(lab, (w * cols + i) * 3);
     }
   }

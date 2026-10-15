@@ -1,15 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toLinear, linearToLab, lstarFromY, luminance } from '../src/hsl-star.js';
+import * as hslStar from '../src/hsl-star.js';
 import { optimalSolidMesh, optimalSolidContours } from '../src/optimal-solid.js';
 
 const close = (a, b, tol, msg) =>
   assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} expected ${b}, got ${a} (tol ${tol})`);
 
 test('CIELAB: white, black and known primaries', () => {
-  linearToLab([1, 1, 1]).forEach((v, i) => close(v, [100, 0, 0][i], 1e-3, 'white'));
-  linearToLab([0, 0, 0]).forEach((v) => close(v, 0, 1e-9, 'black'));
-  const [l, a, b] = linearToLab([1, 0, 0]);
+  hslStar.linearToLab([1, 1, 1]).forEach((v, i) => close(v, [100, 0, 0][i], 1e-3, 'white'));
+  hslStar.linearToLab([0, 0, 0]).forEach((v) => close(v, 0, 1e-9, 'black'));
+  const [l, a, b] = hslStar.linearToLab([1, 0, 0]);
   close(l, 53.24, 0.01, 'red L');
   close(a, 80.09, 0.05, 'red a');
   close(b, 67.2, 0.05, 'red b');
@@ -18,8 +18,8 @@ test('CIELAB: white, black and known primaries', () => {
 test('CIELAB L* agrees with the colour space lightness', () => {
   for (let h = 0; h < 360; h += 10) {
     for (let l = 0; l <= 100; l += 5) {
-      const rgb = toLinear({ h, l, s: 1 });
-      close(linearToLab(rgb)[0], lstarFromY(luminance(rgb)), 0.01);
+      const rgb = hslStar.toLinear({ h, l, s: 1 });
+      close(hslStar.linearToLab(rgb)[0], hslStar.lstarFromY(hslStar.luminance(rgb)), 0.01);
     }
   }
 });
@@ -55,7 +55,7 @@ test('optimal solid contains the sRGB solid', () => {
   };
   for (const level of levels) {
     for (let h = 0; h < 360; h += 3) {
-      const [, a, b] = linearToLab(toLinear({ h, l: level, s: 1 }));
+      const [, a, b] = hslStar.linearToLab(hslStar.toLinear({ h, l: level, s: 1 }));
       const chroma = Math.hypot(a, b);
       assert.ok(chroma < limit(level, Math.atan2(b, a)), `sRGB outside at L* ${level}, h ${h}`);
     }

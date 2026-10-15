@@ -1,21 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fromRgb, toHex, parseColor } from '../src/hsl-star.js';
+import * as hslStar from '../src/hsl-star.js';
 import { interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from '../src/palette.js';
 
-const stops = ['#1d3557', '#f7694f', '#f4e9b0'].map(parseColor);
+const stops = ['#1d3557', '#f7694f', '#f4e9b0'].map(hslStar.parseColor);
 
 test('palette has the requested length and passes through every stop', () => {
   const colours = interpolatePalette(stops, 21);
   assert.equal(colours.length, 21);
-  assert.equal(toHex(colours[0]), '#1d3557');
-  assert.equal(toHex(colours[10]), '#f7694f');
-  assert.equal(toHex(colours[20]), '#f4e9b0');
+  assert.equal(hslStar.toHex(colours[0]), '#1d3557');
+  assert.equal(hslStar.toHex(colours[10]), '#f7694f');
+  assert.equal(hslStar.toHex(colours[20]), '#f4e9b0');
 });
 
 test('lightness changes in even steps between stops', () => {
   const colours = interpolatePalette(stops, 21);
-  const l = colours.map((c) => fromRgb(c).l);
+  const l = colours.map((c) => hslStar.fromRgb(c).l);
   for (const [from, to] of [[0, 10], [10, 20]]) {
     const step = (l[to] - l[from]) / 10;
     for (let i = from; i <= to; i++) {
@@ -27,14 +27,14 @@ test('lightness changes in even steps between stops', () => {
 test('hue takes the shorter way round', () => {
   // Red (0°) to magenta (300°) should pass through 330°, not through green.
   const colours = interpolatePalette([[1, 0, 0], [1, 0, 1]], 3);
-  const h = fromRgb(colours[1]).h;
+  const h = hslStar.fromRgb(colours[1]).h;
   assert.ok(h > 300 && h < 360, `hue ${h}`);
 });
 
 test('greys borrow the hue of their neighbour', () => {
   const colours = interpolatePalette([[0.5, 0.5, 0.5], [0, 0, 1]], 5);
   for (const c of colours.slice(1, 4)) {
-    const { h } = fromRgb(c);
+    const { h } = hslStar.fromRgb(c);
     assert.ok(Math.abs(h - 240) < 2, `hue ${h}`);
   }
 });

@@ -1,194 +1,95 @@
 # HSL*
 
-A colour space and picker on top of sRGB in which every horizontal row has the
-same perceived lightness. Converted to grey, each row of the picker is one
-flat tone.
+A perceptual colour space built on sRGB that measures lightness as it is perceived (CIE L*).
 
-## Background
+## Motivation
 
-### The problem with HSV
+In an HSV or HSL picker, hue runs across and value or lightness runs up and down. Colours at the same height don't look equally light. HSL* keeps the familiar HSV/HSL hue axis but moves every colour up or down, so that each row of the picker has one perceived lightness. Each pure hue then sits at its own lightness: yellow near the top, blue near the bottom.
 
-In an HSV picker, hue runs across and value (V) runs up and down. Colours with
-the same V don't look equally light. Measured as CIE L* (0 = black,
-100 = white):
+![HSV compared with HSL*](docs/hsv-vs-hsl-star.png)
 
-| | Grey | Red | Yellow | Green | Cyan | Blue | Magenta |
-|---|---|---|---|---|---|---|---|
-| V = 1.0 | 100 | 53 | 97 | 88 | 91 | 32 | 60 |
-| V = 0.5 | 53 | 25 | 52 | 46 | 48 | 13 | 30 |
+*Top: HSV at full saturation, and the same plane converted to grey. Bottom: HSL* at full saturation, and its grey conversion: every row is one even grey.*
 
-The top row of HSV alone spans almost the whole lightness range, from blue at
-32 to yellow at 97. Converted to grey, an HSV picker looks like a mountain range,
-not a set of even bands.
+## The HSL* colour space
 
-### The idea
+A colour has three components, like HSL:
 
-Keep the HSV hue axis, but move every colour up or down so that each row has
-one lightness. Each pure hue then sits at its own lightness: yellow near the
-top, blue near the bottom. Below that point the colour is darkened towards
-black, as in HSV. Above it, where HSV has no fully saturated colours, it is
-mixed with white. This fills the whole rectangle from black to white with no
-gaps, and a grayscale conversion of the picker gives perfectly even bands.
+- `h`: hue, 0–360
+- `s`: saturation, 0–1. 1 is the most vivid sRGB colour of that hue and lightness, 0 the grey of the same lightness.
+- `l`: perceived lightness, CIE L*, 0–100
 
-Saturation then mixes that vivid colour with the grey of the same lightness,
-so lightness stays fixed while saturation changes.
+### From HSL* to sRGB
 
-### Prior art
+All mixing happens in linear light, where luminance is a weighted sum of the channels: Y = 0.2126 R + 0.7152 G + 0.0722 B.
 
-The geometry isn't new. HSL* is a close relative of **HCY** (hue, chroma,
-luma) by Kuzma Shapran, published as shader code by
-[Chilliant](https://www.chilliant.com/rgb2hsv.html). HCY also uses the HSV
-hue and scales chroma relative to the luma of the pure hue with the same
-formula, so for each hue the set of colours is the same.
+1. **Pure hue:** p is the HSV colour (h, 1, 1), linearised. Its luminance is Y<sub>p</sub>.
+2. **Target luminance:** Y follows from L* by the CIE formula: Y = ((L* + 16) / 116)³, or L* / 903.3 for L* ≤ 8.
+3. **Most vivid colour at that luminance:**
+   - below the pure hue's own lightness (Y ≤ Y<sub>p</sub>), darken it: v = (Y / Y<sub>p</sub>) · p
+   - above it, mix it with white: v = p + t · (1 − p), with t = (Y − Y<sub>p</sub>) / (1 − Y<sub>p</sub>)
+4. **Saturation:** mix with the grey of the same luminance: c = s · v + (1 − s) · Y
+5. **Output:** encode c with the sRGB transfer function.
 
-HSL* differs in how the lightness is computed:
+Every step keeps the luminance at exactly Y, so every colour in a row has the same L*.
 
-| | HCY (Chilliant) | HSL* |
-|---|---|---|
-| Computed on | RGB as given, usually gamma-encoded | Linear light |
-| Weights | Rec. 601 (0.299, 0.587, 0.114) | sRGB / Rec. 709 (0.2126, 0.7152, 0.0722) |
-| Vertical axis | Luma Y | CIE L* |
-| Hue axis | HSV hue | HSV hue, optionally re-spaced to even OKLab hue |
+### Gamut and inverse
 
-Used the usual way, on gamma-encoded sRGB, HCY rows are only roughly even.
-At full chroma, the row at Y = 0.5 ranges from L* 53 to 76 across hues. HSL*
-rows have the same L* to within floating-point precision. The price is a few
-power functions per pixel, which matters in a shader but not in a picker.
+Every (h, s, l) in range gives a colour inside sRGB, and every sRGB colour maps back to exactly one (h, s, l). Greys have no defined hue. s = 1 is the edge of the sRGB gamut: below the pure hue one channel is 0, above it one channel is 1.
 
-### HCY or HSL*?
+The inverse is closed form as well. L* comes from the luminance. The hue comes from the channels normalised to the range 0–1, which removes the mixing with grey and black or white. The saturation is the ratio of the colour's channel range to that of the most vivid colour, which is Y / Y<sub>p</sub> below the pure hue and (1 − Y) / (1 − Y<sub>p</sub>) above it.
 
-HCY is better when speed and simplicity count:
+## HCY, Okhsl and HSL*
 
-- It needs only a handful of multiplications per colour, with no power
-  functions or cube roots. That's what it was made for: pixel shaders that
-  run on every pixel of every frame.
-- It works directly on gamma-encoded values, so it fits into an existing
-  pipeline without converting to linear light and back.
-- The code is shorter, and several implementations already exist.
+The idea isn't new. HSL* is a close relative of HCY (hue, chroma, luma) by Kuzma Shapran, published by [Chilliant](https://www.chilliant.com/rgb2hsv.html), and pursues the same goal as [Okhsl](https://bottosson.github.io/posts/colorpicker/) by Björn Ottosson.
 
-HSL* is better when the lightness has to be right:
+| | HCY | Okhsl | HSL* |
+|---|---|---|---|
+| Built on | RGB, usually gamma-encoded | OKLab | sRGB in linear light |
+| Lightness | Luma, Rec. 601 weights | OKLab lightness, close to CIE L* | Exact CIE L* |
+| Hue | HSV hue | OKLab hue | HSV hue, optionally re-spaced to even OKLab steps |
+| Rows of equal lightness | Approximate, up to about 23 L* apart | Close | Exact |
+| Hue of tints and shades | Can drift | Stays perceptually constant | Can drift |
+| Maths | A few multiplications | Cube roots, approximated gamut | Closed form, exactly invertible |
 
-- Rows are exactly equal in lightness. HCY rows can differ by up to about
-  23 L* across hues.
-- The luminance weights match the sRGB primaries. Rec. 601 weights come from
-  standard-definition TV.
-- The vertical axis is CIE L*, so equal steps look like equal changes in
-  lightness. Equal steps of luma crowd together at the dark end.
-- The grey preview matches a CIE L* conversion, so lightness relationships
-  you see in the picker hold up when a design is converted to grey.
-- The hue axis can optionally be re-spaced to even OKLab hue steps.
+When to choose which colour space:
 
-Both share the same weaknesses: tints drift slightly in perceived hue, very
-saturated colours look a little brighter than their L* suggests, and both are
-limited to sRGB.
-
-Other related work:
-
-- [KDE's HCY](https://phabricator.kde.org/D27017) and
-  [Krita's HSY′ selector](https://docs.krita.org/reference_manual/dockers/advanced_color_selector.html)
-  also work in linear RGB.
-- [HSLuv](https://hsluv.org/math) uses the same idea of saturation as a
-  share of the maximum sRGB chroma at a given lightness and hue, but is built
-  on CIELUV, so its hue axis is different.
-- [Okhsl](https://bottosson.github.io/posts/colorpicker/) by Björn Ottosson
-  (2021) applies the principle to OKLab. It keeps perceived hue more constant
-  when a colour is tinted or shaded, which HSL* doesn't (see Known limits).
-
-HSL* sits between these: exact CIE L* rows that match a standard grayscale
-conversion, the familiar HSV hue axis, and the pure sRGB primaries at full
-saturation.
-
-## Coordinates
-
-| | Range | Meaning |
-|---|---|---|
-| `h` | 0–360 | Hue. HSV hue by default; optionally re-spaced to even OKLab hue steps. |
-| `l` | 0–100 | Perceived lightness, CIE L*. |
-| `s` | 0–1 | Saturation. 1 is the most vivid sRGB colour of that hue and lightness, 0 the grey of the same lightness. |
-
-Below a hue's own lightness the pure colour is darkened towards black; above
-it, it is mixed with white. All mixing happens in linear light, so the maths
-is closed form and exactly invertible.
+- **HCY** is the right choice when speed counts, for example in pixel shaders.
+- **Okhsl** is the right choice when hue should look as constant as possible across tints and shades.
+- **HSL\*** is the right choice when equal lightness has to hold exactly: each row converts to one grey, as in grayscale conversion and black-and-white printing.
 
 ## Library
 
-`src/hsl-star.js` is a dependency-free ES module.
+`picker/src/hsl-star.js` is a dependency-free ES module. Import it as a namespace, so every call says where it comes from:
 
 ```js
-import { toRgb, fromRgb, toHex, parseColor } from './src/hsl-star.js';
+import * as hslStar from './src/hsl-star.js';
 
-toHex(toRgb({ h: 18, l: 62, s: 0.9 }));            // '#f7694f'
-fromRgb(parseColor('#0000ff'));                   // { h: 240, l: 32.3, s: 1 }
-toRgb({ h: 120, l: 50, s: 1 }, { hue: 'oklab' }); // perceptual hue axis
+hslStar.toHex(hslStar.toRgb({ h: 18, l: 62, s: 0.9 }));    // '#f7694f'
+hslStar.fromRgb(hslStar.parseColor('#0000ff'));           // { h: 240, l: 32.3, s: 1 }
+hslStar.toRgb({ h: 120, l: 50, s: 1 }, { hue: 'oklab' }); // perceptual hue axis
 ```
 
-`toRgb` and `fromRgb` work with gamma-encoded sRGB channels in [0, 1].
-`toLinear`/`fromLinear` do the same in linear light. For rendering whole
-planes, compute `hueBasis(h)` once per column and call `basisToLinear` per
-pixel.
+`toRgb` and `fromRgb` work with gamma-encoded sRGB channels in [0, 1], `toLinear` and `fromLinear` with linear light. To render a whole plane, compute `hueBasis(h)` once per column and call `basisToLinear` per pixel.
 
-### Perceptual hue axis
+## Colour picker
 
-With `{ hue: 'oklab' }` the hue axis is re-spaced so equal steps are roughly
-equal steps of OKLab hue, with red at 0°. Only the axis changes: the set of
-colours is identical to the HSV mode. OKLab sees the pure blues between about
-HSV 222° and 242° as nearly one hue, so the mapping gives them a minimum width
-of about 5° to keep them reachable. The steps elsewhere deviate from perfectly
-even OKLab steps by up to about 3°.
+Start a local server from the `picker` folder, then go to http://localhost:8000:
 
-### Optimal colour solid
-
-`src/optimal-solid.js` computes the optimal colour solid (Rösch–MacAdam
-solid) under D65 in CIELAB: every surface colour that is physically possible.
-`optimalSolidMesh()` returns its surface and `optimalSolidContours(levels)`
-horizontal cuts at given L* values. It uses the CIE 1931 2° colour-matching
-functions in the multi-lobe fit by Wyman, Sloan and Shirley (2013) and the
-CIE D65 spectrum at 5 nm. The tests check that this reproduces the D65 white
-point and that the whole sRGB solid lies inside it. It comes closest at high
-lightness around cyan, where sRGB is about 2 chroma units from the physical
-limit at L* 90.
-
-`linearToLab`, `linearToXyz` and `xyzToLab` in `src/hsl-star.js` convert to
-CIELAB with the D65 white.
-
-### Palettes
-
-`src/palette.js` interpolates between two or more colours in HSL*:
-`interpolatePalette(stops, steps, { hue })` returns `steps` colours running
-through every stop. Lightness and saturation change linearly, hue takes the
-shorter way round. A stop is hit exactly when `(steps − 1)` is divisible by
-`(stops − 1)`, for example 21 steps for 3 colours.
-
-Exports: `paletteToCss` (custom properties), `paletteToJson` (hex, RGB and
-HSL* coordinates) and `paletteToAse` (Adobe Swatch Exchange with RGB process
-colours in one group, for Illustrator and InDesign).
-
-## Picker
-
-Static page: `index.html`, `app.js`, `solid-view.js`, `style.css`. It has the
-hue × lightness field, a saturation × lightness square for the current hue,
-and a 3D view of the HSL* solid in CIELAB with the optimal colour solid as an
-outline. All of them stay in sync. ES modules need a web server, so open it
-through one:
-
-```bash
-npm run serve
+```sh
+cd picker && npm run serve
 ```
 
-Then go to http://localhost:8000.
-
-## Tests
-
-```bash
-npm test
-```
-
-Uses Node's built-in test runner (Node 18 or later).
+Run the tests with `npm test` in the same folder (Node 18 or later).
 
 ## Known limits
 
 - sRGB only. Display P3 or print would need their own gamut.
-- CIE L* doesn't model the Helmholtz–Kohlrausch effect: very saturated reds,
-  magentas and blues look slightly brighter than a grey with the same L*.
-- Tints of a hue can drift slightly in perceived hue (blue towards lavender),
-  because hue is held constant in RGB terms, not perceptually.
+- CIE L* doesn't model the Helmholtz–Kohlrausch effect: very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
+- Tints of a hue can drift slightly in perceived hue (blue towards lavender), because the hue is held constant in RGB terms, not perceptually.
+
+## References
+
+- [Chilliant: RGB to HSV/HSL/HCY](https://www.chilliant.com/rgb2hsv.html): HCY, the closest relative.
+- [Björn Ottosson: Okhsv and Okhsl](https://bottosson.github.io/posts/colorpicker/) (2021): the same principle on OKLab.
+- [HSLuv](https://hsluv.org/math): saturation as a share of the maximum sRGB chroma, built on CIELUV.
+- [KDE's HCY](https://phabricator.kde.org/D27017) and [Krita's HSY′ selector](https://docs.krita.org/reference_manual/dockers/advanced_color_selector.html): HCY-like models in linear RGB.
