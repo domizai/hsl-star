@@ -387,12 +387,17 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .mini-actions button { white-space: nowrap; }
 
 .swatches {
+  --gap: 8px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(var(--columns), minmax(0, 96px));
+  grid-template-rows: repeat(var(--rows), auto);
+  justify-content: center;
+  gap: var(--gap);
   margin-top: 8px;
 }
+.swatches.dense { --gap: 3px; }
 .swatch-item {
+  container-type: inline-size;
   height: auto;
   min-width: 0;
   padding: 0;
@@ -408,6 +413,12 @@ button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
   box-shadow: inset 0 0 0 1px var(--border);
 }
 .swatch-item .hex { display: block; margin-top: 4px; font: 11px var(--mono); color: var(--text-2); }
+.swatches.dense .chip { border-radius: 2px; }
+.swatch-item.base .chip { box-shadow: inset 0 0 0 1px var(--border), 0 0 0 1px var(--text); }
+/* Too narrow for the hex code: the tooltip still has it. */
+@container (max-width: 64px) {
+  .swatch-item .hex { display: none; }
+}
 
 .share { width: 100%; margin-top: 12px; }
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as hslStar from '../src/hsl-star.js';
-import { interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from '../src/palette.js';
+import { interpolatePalette, toneScale, paletteToCss, paletteToJson, paletteToAse } from '../src/palette.js';
 
 const stops = ['#1d3557', '#f7694f', '#f4e9b0'].map(hslStar.parseColor);
 
@@ -85,4 +85,54 @@ test('ASE export has a valid structure', () => {
   assert.equal(o, bytes.length);
   assert.deepEqual(types, [0xc001, 1, 1, 1, 0xc002]);
   assert.deepEqual(read[1], { name: '02 #f7694f', rgb: [247, 105, 79], kind: 2 });
+});
+
+test('tone scale steps evenly in L* and leaves out black and white', () => {
+  const steps = 10;
+  const step = 100 / (steps + 1);
+  for (const hex of ['#000000', '#1d3557', '#f7694f', '#f4e9b0', '#ffffff']) {
+    const base = hslStar.parseColor(hex);
+    const { shades, tints } = toneScale(base, steps);
+    const l = [...shades, base, ...tints].map((c) => hslStar.fromRgb(c).l);
+    assert.ok(shades.length + tints.length <= steps, hex);
+    for (let i = 1; i < l.length; i++) assert.ok(Math.abs(l[i] - l[i - 1] - step) < 0.5, `${hex} step ${i}`);
+    for (const c of [...shades, ...tints]) {
+      const lc = hslStar.fromRgb(c).l;
+      assert.ok(lc > step / 2 - 0.5 && lc < 100 - step / 2 + 0.5, hex);
+    }
+  }
+  assert.equal(toneScale([0, 0, 0], steps).tints.length, steps);
+  assert.equal(toneScale([1, 1, 1], steps).shades.length, steps);
+});
+
+test('long hue goes the other way round', () => {
+  // Red (0°) to magenta (300°) the long way passes green (120°).
+  const colours = interpolatePalette([[1, 0, 0], [1, 0, 1]], 3, { longHue: true });
+  const h = hslStar.fromRgb(colours[1]).h;
+  assert.ok(Math.abs(h - 150) < 2, `hue ${h}`);
+});
+
+test('exports group tints and shades per palette colour', () => {
+  const rows = interpolatePalette(stops, 3).map((base) => ({ base, ...toneScale(base, 4) }));
+  const sizes = rows.map((r) => r.shades.length + 1 + r.tints.length);
+
+  const css = paletteToCss(rows);
+  assert.equal(css.split('\n\n').length, 3);
+  assert.match(css, /--palette-2: #f7694f;/);
+  assert.match(css, /--palette-1-light-1: #/);
+  assert.match(css, /--palette-3-dark-1: #/);
+
+  const json = JSON.parse(paletteToJson(rows));
+  assert.deepEqual(json.groups.map((g) => g.colours.length), sizes);
+  assert.equal(json.groups[1].name, '02 #f7694f');
+  const base = json.groups[1].colours.find((c) => c.tone === 0);
+  assert.equal(base.name, '02 #f7694f');
+  const tones = json.groups[1].colours.map((c) => c.tone);
+  assert.deepEqual(tones, [...tones].sort((a, b) => a - b));
+  assert.match(json.groups[1].colours[0].name, /^02 dark \d #/);
+
+  const bytes = paletteToAse(rows, 'Test');
+  const view = new DataView(bytes.buffer);
+  const total = sizes.reduce((a, b) => a + b, 0);
+  assert.equal(view.getUint32(8), total + 2 * rows.length);
 });

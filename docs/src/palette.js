@@ -6,8 +6,8 @@ import * as hslStar from './hsl-star.js';
 // A continuous gradient through two or more colours. Returns a function of
 // t in [0, 1] that gives gamma-encoded sRGB in [0, 1]; the stops sit at even
 // intervals. Lightness and saturation change linearly between stops, hue
-// takes the shorter way round.
-export function paletteGradient(stops, { hue = 'hsv' } = {}) {
+// takes the shorter way round, or the longer one with `longHue`.
+export function paletteGradient(stops, { hue = 'hsv', longHue = false } = {}) {
   if (stops.length < 2) throw new Error('A palette needs at least two colours.');
   const coords = stops.map((rgb) => hslStar.fromRgb(rgb, { hue }));
 
@@ -28,6 +28,7 @@ export function paletteGradient(stops, { hue = 'hsv' } = {}) {
     let dh = b.h - a.h;
     if (dh > 180) dh -= 360;
     if (dh < -180) dh += 360;
+    if (longHue && dh !== 0) dh -= Math.sign(dh) * 360;
     return hslStar.toRgb({ h: a.h + f * dh, l: a.l + f * (b.l - a.l), s: a.s + f * (b.s - a.s) }, { hue });
   };
 }
@@ -47,30 +48,81 @@ export function interpolatePalette(stops, steps, options) {
   return colours;
 }
 
-const swatchName = (i, rgb) => `${String(i + 1).padStart(2, '0')} ${hslStar.toHex(rgb)}`;
+// Shades and tints of one colour: hue and saturation stay, lightness moves in
+// even steps of 100 / (steps + 1) L*, so a black base gets `steps` tints and a
+// white one `steps` shades. Black and white themselves are left out. Returns
+// the shades darkest first and the tints lightest last.
+export function toneScale(rgb, steps, { hue = 'hsv' } = {}) {
+  const { h, s, l } = hslStar.fromRgb(rgb, { hue });
+  const step = 100 / (steps + 1);
+  const tone = (k) => hslStar.toRgb({ h, s, l: l + k * step }, { hue });
+  // Half a step of slack, so a base just off a level doesn't add a near-black
+  // or near-white swatch.
+  const below = Math.max(0, Math.ceil(l / step - 0.5) - 1);
+  const above = Math.max(0, Math.ceil((100 - l) / step - 0.5) - 1);
+  return {
+    shades: Array.from({ length: below }, (_, i) => tone(i - below)),
+    tints: Array.from({ length: above }, (_, i) => tone(i + 1)),
+  };
+}
+
+// The exports take either a flat list of colours or rows of tones, one row
+// per palette colour: { base, shades, tints } as toneScale gives them. Rows
+// with tones are written in groups, one per palette colour, darkest shade
+// first and lightest tint last.
+function toGroups(colours) {
+  const rows = colours.map((c) => (Array.isArray(c) ? { base: c, shades: [], tints: [] } : c));
+  const number = (i) => String(i + 1).padStart(2, '0');
+  const swatches = (row, i) => [
+    ...row.shades.map((rgb, k) => ({ rgb, index: i, tone: k - row.shades.length })),
+    { rgb: row.base, index: i, tone: 0 },
+    ...row.tints.map((rgb, k) => ({ rgb, index: i, tone: k + 1 })),
+  ];
+  const grouped = rows.some((row) => row.shades.length || row.tints.length);
+  if (!grouped) return { grouped, groups: [{ swatches: rows.flatMap(swatches) }] };
+  return { grouped, groups: rows.map((row, i) => ({ name: `${number(i)} ${hslStar.toHex(row.base)}`, swatches: swatches(row, i) })) };
+}
+
+const toneLabel = (tone) => (tone < 0 ? `dark ${-tone}` : tone > 0 ? `light ${tone}` : '');
+const swatchName = ({ rgb, index, tone }) =>
+  [String(index + 1).padStart(2, '0'), toneLabel(tone), hslStar.toHex(rgb)].filter(Boolean).join(' ');
 
 export function paletteToCss(colours, prefix = 'palette') {
-  const lines = colours.map((rgb, i) => `  --${prefix}-${i + 1}: ${hslStar.toHex(rgb)};`);
-  return `:root {\n${lines.join('\n')}\n}\n`;
+  const { groups } = toGroups(colours);
+  const blocks = groups.map(({ swatches }) =>
+    swatches
+      .map(({ rgb, index, tone }) => {
+        const suffix = toneLabel(tone).replace(' ', '-');
+        return `  --${prefix}-${index + 1}${suffix ? `-${suffix}` : ''}: ${hslStar.toHex(rgb)};`;
+      })
+      .join('\n'),
+  );
+  return `:root {\n${blocks.join('\n\n')}\n}\n`;
 }
 
 export function paletteToJson(colours, { hue = 'hsv' } = {}) {
-  const data = colours.map((rgb, i) => {
-    const { h, l, s } = hslStar.fromRgb(rgb, { hue });
+  const { grouped, groups } = toGroups(colours);
+  const entry = (swatch) => {
+    const { h, l, s } = hslStar.fromRgb(swatch.rgb, { hue });
     return {
-      name: swatchName(i, rgb),
-      hex: hslStar.toHex(rgb),
-      rgb: hslStar.to8bit(rgb),
+      name: swatchName(swatch),
+      ...(grouped && { tone: swatch.tone }),
+      hex: hslStar.toHex(swatch.rgb),
+      rgb: hslStar.to8bit(swatch.rgb),
       hslStar: { h: round(h, 2), l: round(l, 2), s: round(s, 4) },
     };
-  });
-  return JSON.stringify({ space: 'HSL*', hueAxis: hue, colours: data }, null, 2) + '\n';
+  };
+  const data = grouped
+    ? { groups: groups.map(({ name, swatches }) => ({ name, colours: swatches.map(entry) })) }
+    : { colours: groups[0].swatches.map(entry) };
+  return JSON.stringify({ space: 'HSL*', hueAxis: hue, ...data }, null, 2) + '\n';
 }
 
 const round = (v, digits) => Math.round(v * 10 ** digits) / 10 ** digits;
 
-// Adobe Swatch Exchange, version 1.0. Big-endian. One group holding RGB
-// process colours; names are UTF-16 with a terminating zero.
+// Adobe Swatch Exchange, version 1.0. Big-endian. Groups of RGB process
+// colours, one for the whole palette or one per palette colour when it has
+// tones; names are UTF-16 with a terminating zero.
 export function paletteToAse(colours, groupName = 'HSL* palette') {
   const blocks = [];
   const nameBytes = (name) => {
@@ -82,16 +134,17 @@ export function paletteToAse(colours, groupName = 'HSL* palette') {
     return out;
   };
 
-  const groupStart = () => {
-    const name = nameBytes(groupName);
+  const groupStart = (label) => {
+    const name = nameBytes(label);
     const body = new Uint8Array(2 + name.length);
-    new DataView(body.buffer).setUint16(0, groupName.length + 1);
+    new DataView(body.buffer).setUint16(0, label.length + 1);
     body.set(name, 2);
     return { type: 0xc001, body };
   };
 
-  const colourBlock = (rgb, i) => {
-    const label = swatchName(i, rgb);
+  const colourBlock = (swatch) => {
+    const { rgb } = swatch;
+    const label = swatchName(swatch);
     const name = nameBytes(label);
     const body = new Uint8Array(2 + name.length + 4 + 12 + 2);
     const view = new DataView(body.buffer);
@@ -106,7 +159,10 @@ export function paletteToAse(colours, groupName = 'HSL* palette') {
     return { type: 0x0001, body };
   };
 
-  blocks.push(groupStart(), ...colours.map(colourBlock), { type: 0xc002, body: new Uint8Array(0) });
+  for (const group of toGroups(colours).groups) {
+    const label = group.name ? `${groupName} ${group.name}` : groupName;
+    blocks.push(groupStart(label), ...group.swatches.map(colourBlock), { type: 0xc002, body: new Uint8Array(0) });
+  }
 
   const size = 12 + blocks.reduce((sum, b) => sum + 6 + b.body.length, 0);
   const out = new Uint8Array(size);

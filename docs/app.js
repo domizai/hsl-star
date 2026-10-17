@@ -1,5 +1,5 @@
 import * as hslStar from './src/hsl-star.js';
-import { paletteGradient, interpolatePalette, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
+import { paletteGradient, interpolatePalette, toneScale, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
 import { createSolidView } from './solid-view.js';
 import { createMiniPicker } from './mini-picker.js';
 
@@ -519,9 +519,13 @@ for (const button of document.querySelectorAll('[data-copy]')) {
 const palette = {
   stops: ['#1d3557', '#f7694f', '#f4e9b0'],
   steps: 20,
+  tones: 10,
+  longHue: false,
   colours: [],
+  rows: [],
 };
 const MAX_STEPS = 256;
+const MAX_TONES = 50;
 
 // Popover for editing a palette colour. Edits update the colour's row in
 // place, so the popover keeps its anchor while you drag.
@@ -703,33 +707,55 @@ function renderPalette() {
   if (stops.some((c) => !c)) message = 'Enter every colour as hex or RGB, like #3a7bd5.';
   else if (!Number.isInteger(steps) || steps < 2 || steps > MAX_STEPS) message = `Use between 2 and ${MAX_STEPS} steps.`;
   else if (steps < stops.length) message = 'Use at least as many steps as colours.';
+  const tones = palette.tones;
+  const tonesValid = Number.isInteger(tones) && tones >= 0 && tones <= MAX_TONES;
+  if (!message && !tonesValid) message = `Use between 0 and ${MAX_TONES} tints and shades.`;
 
   error.textContent = message;
   $('steps').toggleAttribute('aria-invalid', message.includes('steps'));
+  $('tones').toggleAttribute('aria-invalid', !tonesValid);
   if (message) {
     palette.colours = [];
+    palette.rows = [];
     palette.validStops = null;
     out.replaceChildren();
     renderGradients();
     return;
   }
 
-  palette.colours = interpolatePalette(stops, steps, { hue: state.mode });
+  palette.colours = interpolatePalette(stops, steps, { hue: state.mode, longHue: palette.longHue });
   palette.validStops = stops;
   renderGradients();
+  // One column per palette colour, the colours themselves in the middle row,
+  // tints above and shades below. Rows hold equal steps of L* from the base,
+  // so every column lines up on its base colour.
+  palette.rows = palette.colours.map((base) => ({ base, ...toneScale(base, tones, { hue: state.mode }) }));
+  out.style.setProperty('--columns', palette.rows.length);
+  out.style.setProperty('--rows', tones * 2 + 1);
+  out.classList.toggle('dense', tones > 4 || palette.rows.length > 12);
   out.replaceChildren(
-    ...palette.colours.map((rgb) => {
-      const hex = hslStar.toHex(rgb);
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'swatch-item';
-      item.title = `${hex}, click to load into the picker`;
-      item.innerHTML = `<span class="chip"></span><span class="hex">${hex}</span>`;
-      item.querySelector('.chip').style.background = hex;
-      item.addEventListener('click', () => selectColour(rgb));
-      return item;
-    }),
+    ...palette.rows.flatMap(({ base, shades, tints }, i) =>
+      [...tints.slice().reverse(), base, ...shades.slice().reverse()].map((rgb, k) => {
+        const item = swatchItem(rgb, rgb === base);
+        item.style.gridColumn = i + 1;
+        item.style.gridRow = tones + 1 - tints.length + k;
+        return item;
+      }),
+    ),
   );
+}
+
+function swatchItem(rgb, isBase) {
+  const hex = hslStar.toHex(rgb);
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = isBase ? 'swatch-item base' : 'swatch-item';
+  item.title = `${hex}, click to load into the picker`;
+  item.setAttribute('aria-label', `${isBase ? 'Palette colour' : 'Tone'} ${hex}`);
+  item.innerHTML = `<span class="chip"></span><span class="hex">${hex}</span>`;
+  item.querySelector('.chip').style.background = hex;
+  item.addEventListener('click', () => selectColour(rgb));
+  return item;
 }
 
 // The palette as a continuous gradient and as a stepped bar. Both are drawn
@@ -755,7 +781,7 @@ function renderGradients() {
 
   const ctx = gradientCanvas.getContext('2d');
   const { width: w, height: h } = gradientCanvas;
-  const colourAt = paletteGradient(stops, { hue: state.mode });
+  const colourAt = paletteGradient(stops, { hue: state.mode, longHue: palette.longHue });
   const image = ctx.createImageData(w, h);
   for (let x = 0; x < w; x++) {
     const [r, g, b] = hslStar.to8bit(shown(colourAt(x / Math.max(1, w - 1))));
@@ -785,6 +811,18 @@ $('add-stop').addEventListener('click', () => {
 $('add-current').addEventListener('click', () => {
   palette.stops.push(hslStar.toHex(currentRgb()));
   renderStops();
+  renderPalette();
+});
+
+$('long-hue').checked = palette.longHue;
+$('long-hue').addEventListener('change', (event) => {
+  palette.longHue = event.target.checked;
+  renderPalette();
+});
+
+$('tones').value = palette.tones;
+$('tones').addEventListener('input', (event) => {
+  palette.tones = Number(event.target.value);
   renderPalette();
 });
 
@@ -823,7 +861,7 @@ for (const button of document.querySelectorAll('[data-export]')) {
   button.addEventListener('click', async () => {
     if (!palette.colours.length) return;
     const kind = button.dataset.export;
-    const colours = palette.colours;
+    const colours = palette.rows;
     if (kind === 'css') download('palette.css', paletteToCss(colours), 'text/css');
     if (kind === 'json') download('palette.json', paletteToJson(colours, { hue: state.mode }), 'application/json');
     if (kind === 'ase') download('palette.ase', paletteToAse(colours), 'application/octet-stream');

@@ -88,13 +88,15 @@
 
     <section class="palette" aria-label="Palette generator">
       <h2>Palette</h2>
-      <p>Blend two or more colours in even steps of lightness and saturation. Click a swatch to load it into the picker.</p>
+      <p>Blend two or more colours in even steps of lightness and saturation. Each colour gets its tints and shades in even steps of L*, without black and white. Click a swatch to load it into the picker.</p>
 
       <div class="stops" id="stops"></div>
       <div class="row palette-controls">
         <button type="button" id="add-stop">Add colour</button>
         <button type="button" id="add-current">Add selected colour</button>
         <label class="steps">Steps <input type="number" id="steps" min="2" max="256" step="1"></label>
+        <label class="steps">Tints and shades <input type="number" id="tones" min="0" max="50" step="1"></label>
+        <label class="check"><input type="checkbox" id="long-hue"> Long way round the hue circle</label>
       </div>
       <p class="error" id="palette-error" role="alert"></p>
 

@@ -59,10 +59,10 @@ When to choose which colour space:
 
 ## Colour picker
 
-Start a local server from the `picker` folder, then go to http://localhost:8000:
+Start a local server from the `docs` folder, then go to http://localhost:8000:
 
 ```sh
-cd picker && npm run serve
+cd docs && npm run serve
 ```
 
 Run the tests with `npm test` in the same folder (Node 18 or later).
