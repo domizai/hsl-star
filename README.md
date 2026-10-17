@@ -1,6 +1,6 @@
 # HSL*
 
-A perceptual colour space built on sRGB that measures lightness as it is perceived (CIE L*).
+A perceptual colour space built on sRGB that uses CIE L* as its lightness, so colours of the same lightness look equally light, whatever their hue.
 
 ## Motivation
 

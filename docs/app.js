@@ -524,8 +524,8 @@ const stopRgb = ({ text, exact }) => exact ?? hslStar.parseColor(text);
 
 const palette = {
   stops: ['#1d3557', '#f7694f', '#f4e9b0'].map((hex) => stop(hex)),
-  steps: 20,
-  tones: 10,
+  steps: 21,
+  tones: 9,
   longHue: false,
   colours: [],
   rows: [],

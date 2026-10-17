@@ -10,7 +10,7 @@
   <main class="app">
     <header class="intro">
       <h1>HSL* picker</h1>
-      <p>A perceptual colour space built on sRGB that measures lightness as it is perceived (CIE L*).</p>
+      <p>A simple perceptual colour space built on sRGB.</p>
       <a class="github" href="https://domizai.github.io/hsl-star/" aria-label="HSL* on GitHub" title="HSL* on GitHub">
         <svg viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.06-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       </a>
@@ -44,51 +44,55 @@
     </section>
 
     <aside class="panel" aria-label="Selected colour">
-      <div class="pick-wrap">
-        <canvas class="pick" id="tone" tabindex="0" role="slider" aria-label="Saturation and lightness of the current hue. Use the arrow keys to move, hold Shift for larger steps."></canvas>
-        <div class="marker" id="tone-marker" aria-hidden="true"></div>
+      <div class="panel-tone">
+        <div class="pick-wrap">
+          <canvas class="pick" id="tone" tabindex="0" role="slider" aria-label="Saturation and lightness of the current hue. Use the arrow keys to move, hold Shift for larger steps."></canvas>
+          <div class="marker" id="tone-marker" aria-hidden="true"></div>
+        </div>
+        <div class="tone-axis" aria-hidden="true"><span>Grey</span><span>Saturation</span><span>Vivid</span></div>
       </div>
-      <div class="tone-axis" aria-hidden="true"><span>Grey</span><span>Saturation</span><span>Vivid</span></div>
-      <div class="swatch" id="swatch"></div>
+      <div class="panel-values">
+        <div class="swatch" id="swatch"></div>
 
-      <div class="value">
-        <label for="hex">Hex</label>
-        <div class="value-row">
-          <input id="hex" spellcheck="false" autocomplete="off">
-          <button type="button" data-copy="hex">Copy</button>
+        <div class="value">
+          <label for="hex">Hex</label>
+          <div class="value-row">
+            <input id="hex" spellcheck="false" autocomplete="off">
+            <button type="button" data-copy="hex">Copy</button>
+          </div>
         </div>
-      </div>
-      <div class="value">
-        <label for="rgb">RGB</label>
-        <div class="value-row">
-          <input id="rgb" spellcheck="false" autocomplete="off">
-          <button type="button" data-copy="rgb">Copy</button>
+        <div class="value">
+          <label for="rgb">RGB</label>
+          <div class="value-row">
+            <input id="rgb" spellcheck="false" autocomplete="off">
+            <button type="button" data-copy="rgb">Copy</button>
+          </div>
         </div>
-      </div>
-      <p class="error" id="error" role="alert"></p>
+        <p class="error" id="error" role="alert"></p>
 
-      <div class="coords">
-        <div class="coord">
-          <label for="in-h">Hue</label>
-          <span class="coord-input"><input type="number" id="in-h" min="0" max="360" step="0.1" inputmode="decimal"><span class="unit">°</span></span>
+        <div class="coords">
+          <div class="coord">
+            <label for="in-h">Hue</label>
+            <span class="coord-input"><input type="number" id="in-h" min="0" max="360" step="0.1" inputmode="decimal"><span class="unit">°</span></span>
+          </div>
+          <p class="coord-note" id="hue-note"></p>
+          <div class="coord">
+            <label for="in-l">Lightness L*</label>
+            <span class="coord-input"><input type="number" id="in-l" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit"></span></span>
+          </div>
+          <div class="coord">
+            <label for="in-s">Saturation</label>
+            <span class="coord-input"><input type="number" id="in-s" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit">%</span></span>
+          </div>
         </div>
-        <p class="coord-note" id="hue-note"></p>
-        <div class="coord">
-          <label for="in-l">Lightness L*</label>
-          <span class="coord-input"><input type="number" id="in-l" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit"></span></span>
-        </div>
-        <div class="coord">
-          <label for="in-s">Saturation</label>
-          <span class="coord-input"><input type="number" id="in-s" min="0" max="100" step="0.1" inputmode="decimal"><span class="unit">%</span></span>
-        </div>
+        <button type="button" class="share" data-copy="link">Copy link to this colour</button>
+        <p class="status" id="status" aria-live="polite"></p>
       </div>
-      <button type="button" class="share" data-copy="link">Copy link to this colour</button>
-      <p class="status" id="status" aria-live="polite"></p>
     </aside>
 
     <section class="palette" aria-label="Palette generator">
       <h2>Palette</h2>
-      <p>Blend two or more colours in even steps of lightness and saturation. Each colour gets its tints and shades in even steps of L*, without black and white. Click a swatch to load it into the picker.</p>
+      <p>Blend two or more colours in even steps of lightness and saturation. Each colour gets its tints and shades in even steps of L*.</p>
 
       <div class="stops" id="stops"></div>
       <div class="row palette-controls">
