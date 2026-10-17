@@ -728,17 +728,23 @@ function renderPalette() {
   renderGradients();
   // One column per palette colour, the colours themselves in the middle row,
   // tints above and shades below. Rows hold equal steps of L* from the base,
-  // so every column lines up on its base colour.
+  // so every column lines up on its base colour. The swatches are square, so
+  // when there are more tones than colours the grid would be taller than
+  // wide: then turn it, with the colours in the middle column and the tints
+  // to the right.
   palette.rows = palette.colours.map((base) => ({ base, ...toneScale(base, tones, { hue: state.mode }) }));
-  out.style.setProperty('--columns', palette.rows.length);
-  out.style.setProperty('--rows', tones * 2 + 1);
-  out.classList.toggle('dense', tones > 4 || palette.rows.length > 12);
+  const toneCount = tones * 2 + 1;
+  const turned = toneCount > palette.rows.length;
+  out.style.setProperty('--columns', turned ? toneCount : palette.rows.length);
+  out.style.setProperty('--rows', turned ? palette.rows.length : toneCount);
+  out.classList.toggle('dense', Math.max(toneCount, palette.rows.length) > 12);
   out.replaceChildren(
     ...palette.rows.flatMap(({ base, shades, tints }, i) =>
       [...tints.slice().reverse(), base, ...shades.slice().reverse()].map((rgb, k) => {
         const item = swatchItem(rgb, rgb === base);
-        item.style.gridColumn = i + 1;
-        item.style.gridRow = tones + 1 - tints.length + k;
+        const position = tones + 1 - tints.length + k; // 1 is the lightest
+        item.style.gridColumn = turned ? toneCount + 1 - position : i + 1;
+        item.style.gridRow = turned ? i + 1 : position;
         return item;
       }),
     ),
