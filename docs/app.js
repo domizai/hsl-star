@@ -516,8 +516,14 @@ for (const button of document.querySelectorAll('[data-copy]')) {
 
 // --- Palette -----------------------------------------------------------------------
 
+// Each colour keeps the text shown in its field and, when it was picked
+// rather than typed, the exact sRGB values. Hex rounds to 8 bits, which moves
+// HSL* by up to about 0.4, so a colour reopened from its hex would drift.
+const stop = (text, exact = null) => ({ text, exact });
+const stopRgb = ({ text, exact }) => exact ?? hslStar.parseColor(text);
+
 const palette = {
-  stops: ['#1d3557', '#f7694f', '#f4e9b0'],
+  stops: ['#1d3557', '#f7694f', '#f4e9b0'].map((hex) => stop(hex)),
   steps: 20,
   tones: 10,
   longHue: false,
@@ -535,7 +541,7 @@ const miniPicker = createMiniPicker({
   onChange: (rgb) => {
     if (!editing) return;
     const hex = hslStar.toHex(rgb);
-    palette.stops[editing.index] = hex;
+    palette.stops[editing.index] = stop(hex, rgb);
     editing.input.value = hex;
     editing.input.removeAttribute('aria-invalid');
     editing.swatch.style.background = hex;
@@ -549,10 +555,10 @@ function renderStops() {
   editing = null;
   const list = $('stops');
   list.replaceChildren(
-    ...palette.stops.map((hex, i) => {
+    ...palette.stops.map((entry, i) => {
       const row = document.createElement('div');
       row.className = 'stop';
-      const rgb = hslStar.parseColor(hex);
+      const rgb = stopRgb(entry);
 
       const swatch = document.createElement('button');
       swatch.type = 'button';
@@ -571,17 +577,17 @@ function renderStops() {
         }
         editing = { index: i, swatch, input };
         // An invalid entry opens on mid grey; picking a colour replaces it.
-        miniPicker.open(swatch, hslStar.parseColor(input.value) ?? [0.5, 0.5, 0.5]);
+        miniPicker.open(swatch, stopRgb(palette.stops[i]) ?? [0.5, 0.5, 0.5]);
       });
 
       const input = document.createElement('input');
-      input.value = hex;
+      input.value = entry.text;
       input.spellcheck = false;
       input.autocomplete = 'off';
       input.setAttribute('aria-label', `Colour ${i + 1}`);
       if (!rgb) input.setAttribute('aria-invalid', 'true');
       input.addEventListener('change', () => {
-        palette.stops[i] = input.value.trim();
+        palette.stops[i] = stop(input.value.trim());
         renderStops();
         renderPalette();
       });
@@ -618,8 +624,8 @@ function renderStops() {
 }
 
 function moveStop(from, to) {
-  const [stop] = palette.stops.splice(from, 1);
-  palette.stops.splice(to, 0, stop);
+  const [moved] = palette.stops.splice(from, 1);
+  palette.stops.splice(to, 0, moved);
   renderStops();
   renderPalette();
 }
@@ -701,7 +707,7 @@ function enableStopDrag(swatch, row, index) {
 function renderPalette() {
   const error = $('palette-error');
   const out = $('swatches');
-  const stops = palette.stops.map(hslStar.parseColor);
+  const stops = palette.stops.map(stopRgb);
   const steps = palette.steps;
   let message = '';
   if (stops.some((c) => !c)) message = 'Enter every colour as hex or RGB, like #3a7bd5.';
@@ -809,13 +815,14 @@ new ResizeObserver(renderGradients).observe(gradientCanvas);
 $('preview').addEventListener('change', renderGradients);
 
 $('add-stop').addEventListener('click', () => {
-  palette.stops.push(palette.stops[palette.stops.length - 1]);
+  palette.stops.push({ ...palette.stops[palette.stops.length - 1] });
   renderStops();
   renderPalette();
 });
 
 $('add-current').addEventListener('click', () => {
-  palette.stops.push(hslStar.toHex(currentRgb()));
+  const rgb = currentRgb();
+  palette.stops.push(stop(hslStar.toHex(rgb), rgb));
   renderStops();
   renderPalette();
 });
