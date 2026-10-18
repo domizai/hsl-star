@@ -1,6 +1,6 @@
 # HSL*
 
-A perceptual colour space built on sRGB that uses CIE L* as its lightness, so colours of the same lightness look equally light, whatever their hue.
+A colour space built on sRGB with perceptual lightness.
 
 ## Motivation
 
@@ -14,7 +14,7 @@ In an HSL picker, hues at the same height don't look equally light. HSL* keeps t
 
 A colour has three components, like HSL:
 
-- `h`: hue, 0–360
+- `h`: hue, 0–360. By default the hue of HSV and HSL; optionally re-spaced, see [Hue axis](#hue-axis).
 - `s`: saturation, 0–1. 1 is the most vivid sRGB colour of that hue and lightness, 0 the grey of the same lightness.
 - `l`: perceived lightness, CIE L*, 0–100
 
@@ -38,6 +38,10 @@ Every (h, s, l) in range gives a colour inside sRGB, and every sRGB colour maps 
 
 The inverse is closed form as well. L* comes from the luminance. The hue comes from the channels normalised to the range 0–1, which removes the mixing with grey and black or white. The saturation is the ratio of the colour's channel range to that of the most vivid colour, which is Y / Y<sub>p</sub> below the pure hue and (1 − Y) / (1 − Y<sub>p</sub>) above it.
 
+### Hue axis
+
+By default `h` is the HSV hue, whose hues don’t look evenly spaced. HSL* can space them by OKLab hue instead: this reorders the columns into roughly even steps. Colours are still built as above, so tints and shades can drift slightly in hue. Use the same option in both directions.
+
 ## HCY, Okhsl and HSL*
 
 The idea isn't new. HSL* is a close relative of HCY (hue, chroma, luma) by Kuzma Shapran, published by [Chilliant](https://www.chilliant.com/rgb2hsv.html), and pursues the same goal as [Okhsl](https://bottosson.github.io/posts/colorpicker/) by Björn Ottosson.
@@ -46,7 +50,7 @@ The idea isn't new. HSL* is a close relative of HCY (hue, chroma, luma) by Kuzma
 |---|---|---|---|
 | Built on | RGB, usually gamma-encoded | OKLab | sRGB in linear light |
 | Lightness | Luma, Rec. 601 weights | OKLab lightness, close to CIE L* | Exact CIE L* |
-| Hue | HSV hue | OKLab hue | HSV hue, optionally re-spaced to even OKLab steps |
+| Hue | HSV hue | OKLab hue | HSV hue, optionally re-spaced to roughly even OKLab steps |
 | Rows of equal lightness | Approximate, up to about 23 L* apart | Close | Exact |
 | Hue of tints and shades | Can drift | Stays perceptually constant | Can drift |
 | Maths | A few multiplications | Cube roots, approximated gamut | Closed form, exactly invertible |
