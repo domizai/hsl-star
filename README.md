@@ -59,13 +59,11 @@ When to choose which colour space:
 
 ## Colour picker
 
-Start a local server from the `docs` folder, then go to http://localhost:8000:
+The picker runs at https://domizai.github.io/hsl-star/. The `docs` folder holds its minified build, served by GitHub Pages.
 
-```sh
-cd docs && npm run serve
-```
+## Library
 
-Run the tests with `npm test` in the same folder (Node 18 or later).
+The colour space and the palette functions are in [`js`](js/README.md). Run their tests with `npm test` (Node 18 or later).
 
 ## Known limits
 

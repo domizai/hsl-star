@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as hslStar from '../src/hsl-star.js';
+import * as hslStar from '../hsl-star.js';
 
 const close = (a, b, tol, msg) =>
   assert.ok(Math.abs(a - b) <= tol, `${msg ?? ''} expected ${b}, got ${a} (tol ${tol})`);

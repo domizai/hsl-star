@@ -4,9 +4,8 @@
   "description": "Equal-lightness colour space and colour picker built on sRGB",
   "type": "module",
   "private": true,
-  "main": "src/hsl-star.js",
+  "main": "js/hsl-star.js",
   "scripts": {
-    "test": "node --test",
-    "serve": "python3 -m http.server 8000"
+    "test": "node --test 'js/test/*.test.js'"
   }
 }
