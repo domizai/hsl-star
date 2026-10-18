@@ -1,6 +1,6 @@
 # HSL* JavaScript module
 
-Two files with no dependencies: `hsl-star.js` holds the colour space, `palette.js` builds palettes on top of it and needs `hsl-star.js` next to it. Both are ES modules and run in current browsers and in Node 18 or later. Copy them into your project and import them by path.
+Two files with no dependencies: `hsl-star.js` holds the colour space, `palette.js` builds palettes on top of it and needs `hsl-star.js` next to it. Both are ES modules and run in current browsers and in Node 18 or later. Copy them into your project and import them by path. For TypeScript and editor hints, copy `hsl-star.d.ts` and `palette.d.ts` next to them.
 
 ```js
 import * as hslStar from './hsl-star.js';

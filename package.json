@@ -6,6 +6,7 @@
   "private": true,
   "license": "MIT",
   "main": "js/hsl-star.js",
+  "types": "js/hsl-star.d.ts",
   "scripts": {
     "test": "node --test 'js/test/*.test.js'"
   }
