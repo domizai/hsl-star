@@ -4,6 +4,7 @@
   "description": "Equal-lightness colour space and colour picker built on sRGB",
   "type": "module",
   "private": true,
+  "license": "MIT",
   "main": "js/hsl-star.js",
   "scripts": {
     "test": "node --test 'js/test/*.test.js'"

@@ -77,3 +77,7 @@ The colour space and the palette functions are in [`js`](js/README.md). Run thei
 - [Björn Ottosson: Okhsv and Okhsl](https://bottosson.github.io/posts/colorpicker/) (2021): the same principle on OKLab.
 - [HSLuv](https://hsluv.org/math): saturation as a share of the maximum sRGB chroma, built on CIELUV.
 - [KDE's HCY](https://phabricator.kde.org/D27017) and [Krita's HSY′ selector](https://docs.krita.org/reference_manual/dockers/advanced_color_selector.html): HCY-like models in linear RGB.
+
+## Licence
+
+MIT, see [LICENSE.txt](LICENSE.txt).
