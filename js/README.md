@@ -15,8 +15,16 @@ hslStar.fromRgb(blue); // { h: 240, l: 32.30…, s: 1 }
 
 // HSL* to 8-bit sRGB
 const green = hslStar.toRgb({ h: 120, l: 50, s: 1 });
-hslStar.to8bit(green); // [0, 138, 50]
+hslStar.to8bit(green); // [0, 139, 0]
 ```
+
+Or load it from jsDelivr without copying anything:
+
+```js
+import * as hslStar from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.1.0/js/hsl-star.js';
+```
+
+Add `.min` before `.js` for a minified copy, e.g. `hsl-star.min.js`.
 
 ## Coordinates
 
@@ -136,6 +144,12 @@ interpolatePalette(stops, 5).map(hslStar.toHex);
 const { shades, tints } = toneScale(stops[1], 4);
 shades.map(hslStar.toHex); // ['#621d0c', '#b03b1d']
 tints.map(hslStar.toHex);  // ['#fabdb7']
+```
+
+From jsDelivr, `palette.js` finds `hsl-star.js` next to it as well:
+
+```js
+import { interpolatePalette, toneScale } from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.1.0/js/palette.js';
 ```
 
 All three functions take the `{ hue }` option of the colour space.
