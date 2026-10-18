@@ -116,10 +116,10 @@ function getPerceptualLut() {
   return lut;
 }
 
-// Convert an axis hue in the given mode to an HSV hue.
-export function toHsvHue(h, mode = 'hsv') {
+// Convert a hue on the given axis to an HSV hue.
+export function toHsvHue(h, { hue = 'hsv' } = {}) {
   h = wrapHue(h);
-  if (mode === 'hsv') return h;
+  if (hue === 'hsv') return h;
   const lut = getPerceptualLut();
   let lo = 0;
   let hi = LUT_SIZE;
@@ -132,10 +132,10 @@ export function toHsvHue(h, mode = 'hsv') {
   return wrapHue(((lo + t) * 360) / LUT_SIZE);
 }
 
-// Convert an HSV hue to an axis hue in the given mode.
-export function fromHsvHue(h, mode = 'hsv') {
+// Convert an HSV hue to a hue on the given axis.
+export function fromHsvHue(h, { hue = 'hsv' } = {}) {
   h = wrapHue(h);
-  if (mode === 'hsv') return h;
+  if (hue === 'hsv') return h;
   const lut = getPerceptualLut();
   const x = (h / 360) * LUT_SIZE;
   const i = Math.min(Math.floor(x), LUT_SIZE - 1);
@@ -147,7 +147,7 @@ export function fromHsvHue(h, mode = 'hsv') {
 // Everything that only depends on hue. Compute it once per column when
 // rendering a whole plane, then call basisToLinear per pixel.
 export function hueBasis(h, { hue = 'hsv' } = {}) {
-  const pure = pureHue(toHsvHue(h, hue)).map(decode);
+  const pure = pureHue(toHsvHue(h, { hue })).map(decode);
   return { pure, y: luminance(pure) };
 }
 
@@ -181,7 +181,7 @@ export function fromLinear(rgb, { hue = 'hsv' } = {}) {
   const yPure = luminance(pure);
   const vividRange = y <= yPure ? y / yPure : (1 - y) / (1 - yPure);
   const s = vividRange > 0 ? clamp(range / vividRange, 0, 1) : 0;
-  return { h: fromHsvHue(hsv, hue), l, s };
+  return { h: fromHsvHue(hsv, { hue }), l, s };
 }
 
 // Gamma-encoded sRGB, channels in [0, 1].

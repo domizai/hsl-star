@@ -35,7 +35,7 @@ The functions that take or return a hue accept an option `{ hue }`:
 - `'hsv'` (default): the hue of HSV and HSL, so 0 is red, 120 green, 240 blue.
 - `'oklab'`: the same hues re-spaced so that equal steps look like roughly equal changes of hue, following OKLab. 0 is still red. Pure blues, which OKLab sees as almost one hue, are kept from collapsing, so the axis is close to OKLab but not exact.
 
-Use the same option for `toRgb` and `fromRgb`, or the hue will shift. `toHsvHue(h, mode)` and `fromHsvHue(h, mode)` convert a hue between the two axes. `HUE_MODES` lists the valid names.
+Use the same option for `toRgb` and `fromRgb`, or the hue will shift. `toHsvHue(h, { hue })` and `fromHsvHue(h, { hue })` convert a hue between the HSV axis and the given one. `HUE_MODES` lists the valid names.
 
 ## Edge cases
 
@@ -67,10 +67,10 @@ Linear-light sRGB for a basis from `hueBasis`. Call it per pixel.
 
 ### Hue
 
-`toHsvHue(h, mode)`\
-Hue on the given axis to an HSV hue.
+`toHsvHue(h, { hue })`\
+Hue on the given axis to an HSV hue. With `'hsv'` it only wraps the hue to 0–360.
 
-`fromHsvHue(h, mode)`\
+`fromHsvHue(h, { hue })`\
 HSV hue to a hue on the given axis.
 
 `pureHue(h)`\

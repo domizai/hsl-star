@@ -59,9 +59,9 @@ export function basisToLinear(basis: HueBasis, l: number, s: number): Rgb;
 // Hue
 
 /** Hue on the given axis to an HSV hue. */
-export function toHsvHue(h: number, mode?: HueMode): number;
+export function toHsvHue(h: number, options?: HueOptions): number;
 /** HSV hue to a hue on the given axis. */
-export function fromHsvHue(h: number, mode?: HueMode): number;
+export function fromHsvHue(h: number, options?: HueOptions): number;
 /** The fully saturated colour of an HSV hue (S = V = 1), gamma-encoded. */
 export function pureHue(h: number): Rgb;
 /** OKLab hue angle of a linear-light colour, 0–360. */

@@ -103,15 +103,15 @@ test('every sRGB colour maps into range and back to itself', () => {
 test('perceptual hue axis: monotonic, red at 0, even OKLab steps', () => {
   let prev = -1;
   for (let h = 0; h < 360; h += 0.25) {
-    const p = hslStar.fromHsvHue(h, 'oklab');
+    const p = hslStar.fromHsvHue(h, { hue: 'oklab' });
     assert.ok(p > prev, `not increasing at hsv ${h}`);
     prev = p;
-    close(hslStar.toHsvHue(p, 'oklab'), h, 1e-6, 'inverse');
+    close(hslStar.toHsvHue(p, { hue: 'oklab' }), h, 1e-6, 'inverse');
   }
-  assert.equal(hslStar.fromHsvHue(0, 'oklab'), 0);
+  assert.equal(hslStar.fromHsvHue(0, { hue: 'oklab' }), 0);
 
   // The minimum slope through the blues shifts the other steps a little.
-  const okOf = (p) => hslStar.oklabHue(hslStar.pureHue(hslStar.toHsvHue(p, 'oklab')).map(hslStar.decode));
+  const okOf = (p) => hslStar.oklabHue(hslStar.pureHue(hslStar.toHsvHue(p, { hue: 'oklab' })).map(hslStar.decode));
   const red = okOf(0);
   for (let p = 0; p < 360; p += 30) {
     close(hueDiff(okOf(p), red), Math.min(p, 360 - p), 3, `step ${p}`);
@@ -119,14 +119,14 @@ test('perceptual hue axis: monotonic, red at 0, even OKLab steps', () => {
 });
 
 test('perceptual hue axis keeps the blues reachable', () => {
-  const width = hslStar.fromHsvHue(242, 'oklab') - hslStar.fromHsvHue(222, 'oklab');
+  const width = hslStar.fromHsvHue(242, { hue: 'oklab' }) - hslStar.fromHsvHue(222, { hue: 'oklab' });
   assert.ok(width >= 4.9, `blue band only ${width}° wide`);
 });
 
 test('hsv mode leaves the hue untouched', () => {
   for (let h = 0; h < 360; h += 7.3) {
-    assert.equal(hslStar.toHsvHue(h, 'hsv'), h);
-    assert.equal(hslStar.fromHsvHue(h, 'hsv'), h);
+    assert.equal(hslStar.toHsvHue(h, { hue: 'hsv' }), h);
+    assert.equal(hslStar.fromHsvHue(h, { hue: 'hsv' }), h);
   }
 });
 
