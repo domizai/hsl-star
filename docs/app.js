@@ -1,5 +1,6 @@
 import * as hslStar from './src/hsl-star.js';
-import { paletteGradient, interpolatePalette, toneScale, paletteToCss, paletteToJson, paletteToAse } from './src/palette.js';
+import { paletteGradient, interpolatePalette, toneScale } from './src/palette.js';
+import { paletteToCss, paletteToJson, paletteToAse } from './src/palette-export.js';
 import { createSolidView } from './solid-view.js';
 import { createMiniPicker } from './mini-picker.js';
 
@@ -392,7 +393,7 @@ function clearError() {
 }
 
 function commit(input) {
-  const rgb = hslStar.parseColor(input.value);
+  const rgb = hslStar.parseRgb(input.value);
   if (!rgb) {
     input.setAttribute('aria-invalid', 'true');
     $('error').textContent =
@@ -520,7 +521,7 @@ for (const button of document.querySelectorAll('[data-copy]')) {
 // rather than typed, the exact sRGB values. Hex rounds to 8 bits, which moves
 // HSL* by up to about 0.4, so a colour reopened from its hex would drift.
 const stop = (text, exact = null) => ({ text, exact });
-const stopRgb = ({ text, exact }) => exact ?? hslStar.parseColor(text);
+const stopRgb = ({ text, exact }) => exact ?? hslStar.parseRgb(text);
 
 const palette = {
   stops: ['#1d3557', '#f7694f', '#f4e9b0'].map((hex) => stop(hex)),

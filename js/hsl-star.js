@@ -237,7 +237,7 @@ export function toRgbString(rgb) {
 
 // Accepts #rgb, #rrggbb (with or without #), rgb(r, g, b) and "r, g, b"
 // with 0–255 channels. Returns gamma-encoded [0, 1] channels or null.
-export function parseColor(input) {
+export function parseRgb(input) {
   const str = String(input).trim().toLowerCase();
   let m = str.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/);
   if (m) {

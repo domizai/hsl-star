@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as hslStar from '../src/hsl-star.js';
-import { interpolatePalette, toneScale, paletteToCss, paletteToJson, paletteToAse } from '../src/palette.js';
+import { interpolatePalette, toneScale } from '../src/palette.js';
+import { paletteToCss, paletteToJson, paletteToAse } from '../src/palette-export.js';
 
-const stops = ['#1d3557', '#f7694f', '#f4e9b0'].map(hslStar.parseColor);
+const stops = ['#1d3557', '#f7694f', '#f4e9b0'].map(hslStar.parseRgb);
 
 test('palette has the requested length and passes through every stop', () => {
   const colours = interpolatePalette(stops, 21);
@@ -91,7 +92,7 @@ test('tone scale steps evenly in L* and leaves out black and white', () => {
   const steps = 10;
   const step = 100 / (steps + 1);
   for (const hex of ['#000000', '#1d3557', '#f7694f', '#f4e9b0', '#ffffff']) {
-    const base = hslStar.parseColor(hex);
+    const base = hslStar.parseRgb(hex);
     const { shades, tints } = toneScale(base, steps);
     const l = [...shades, base, ...tints].map((c) => hslStar.fromRgb(c).l);
     assert.ok(shades.length + tints.length <= steps, hex);

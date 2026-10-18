@@ -186,7 +186,7 @@ export function createMiniPicker({ getHueMode, onChange, onLoad }) {
     const input = fields[key];
     let ok = true;
     if (key === 'hex' || key === 'rgb') {
-      const value = hslStar.parseColor(input.value);
+      const value = hslStar.parseRgb(input.value);
       ok = !!value;
       if (ok) setFromRgb(value);
     } else {

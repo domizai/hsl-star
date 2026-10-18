@@ -47,7 +47,7 @@ test('8-bit output stays close to the target L*', () => {
     for (let h = 0; h < 360; h += 2) {
       for (const s of [0, 0.5, 1]) {
         const hex = hslStar.toHex(hslStar.toRgb({ h, l, s }));
-        const got = hslStar.lstarFromY(hslStar.luminance(hslStar.parseColor(hex).map(hslStar.decode)));
+        const got = hslStar.lstarFromY(hslStar.luminance(hslStar.parseRgb(hex).map(hslStar.decode)));
         worst = Math.max(worst, Math.abs(got - l));
       }
     }
@@ -133,11 +133,11 @@ test('hsv mode leaves the hue untouched', () => {
 test('formatting and parsing', () => {
   assert.equal(hslStar.toHex([1, 0.5, 0]), '#ff8000');
   assert.equal(hslStar.toRgbString([1, 0.5, 0]), 'rgb(255, 128, 0)');
-  assert.deepEqual(hslStar.parseColor('#f80').map((v) => v * 255), [255, 136, 0]);
-  assert.deepEqual(hslStar.parseColor('FF8000').map((v) => v * 255), [255, 128, 0]);
-  assert.deepEqual(hslStar.parseColor('rgb(255, 128, 0)').map((v) => v * 255), [255, 128, 0]);
-  assert.deepEqual(hslStar.parseColor('12 34 56').map((v) => v * 255), [12, 34, 56]);
-  assert.equal(hslStar.parseColor('rgb(300, 0, 0)'), null);
-  assert.equal(hslStar.parseColor('#12345'), null);
-  assert.equal(hslStar.parseColor('blue'), null);
+  assert.deepEqual(hslStar.parseRgb('#f80').map((v) => v * 255), [255, 136, 0]);
+  assert.deepEqual(hslStar.parseRgb('FF8000').map((v) => v * 255), [255, 128, 0]);
+  assert.deepEqual(hslStar.parseRgb('rgb(255, 128, 0)').map((v) => v * 255), [255, 128, 0]);
+  assert.deepEqual(hslStar.parseRgb('12 34 56').map((v) => v * 255), [12, 34, 56]);
+  assert.equal(hslStar.parseRgb('rgb(300, 0, 0)'), null);
+  assert.equal(hslStar.parseRgb('#12345'), null);
+  assert.equal(hslStar.parseRgb('blue'), null);
 });
