@@ -7,7 +7,7 @@ import * as hslStar from './hsl-star.js';
 // t in [0, 1] that gives gamma-encoded sRGB in [0, 1]; the stops sit at even
 // intervals. Lightness and saturation change linearly between stops, hue
 // takes the shorter way round, or the longer one with `longHue`.
-export function paletteGradient(stops, { hue = 'hsv', longHue = false } = {}) {
+export function paletteGradient(stops, { hue = 'oklab', longHue = false } = {}) {
   if (stops.length < 2) throw new Error('A palette needs at least two colours.');
   const coords = stops.map((rgb) => hslStar.fromRgb(rgb, { hue }));
 
@@ -52,7 +52,7 @@ export function interpolatePalette(stops, steps, options) {
 // even steps of 100 / (steps + 1) L*, so a black base gets `steps` tints and a
 // white one `steps` shades. Black and white themselves are left out. Returns
 // the shades darkest first and the tints lightest last.
-export function toneScale(rgb, steps, { hue = 'hsv' } = {}) {
+export function toneScale(rgb, steps, { hue = 'oklab' } = {}) {
   const { h, s, l } = hslStar.fromRgb(rgb, { hue });
   const step = 100 / (steps + 1);
   const tone = (k) => hslStar.toRgb({ h, s, l: l + k * step }, { hue });

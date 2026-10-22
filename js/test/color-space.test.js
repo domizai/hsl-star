@@ -58,11 +58,20 @@ test('8-bit output stays close to the target L*', () => {
 test('pure hues land at s = 1 and their own lightness', () => {
   for (let h = 0; h < 360; h += 15) {
     const rgb = hslStar.pureHue(h);
-    const c = hslStar.fromRgb(rgb);
+    const c = hslStar.fromRgb(rgb, { hue: 'hsv' });
     close(c.s, 1, 1e-9, `s at h=${h}`);
     close(c.h, h, 1e-6, `h at h=${h}`);
     close(c.l, hslStar.lstarFromY(hslStar.luminance(rgb.map(hslStar.decode))), 1e-9);
   }
+});
+
+test('the even perceived (oklab) hue axis is the default', () => {
+  const coords = { h: 200, l: 55, s: 0.7 };
+  assert.deepEqual(hslStar.toRgb(coords), hslStar.toRgb(coords, { hue: 'oklab' }));
+  assert.notDeepEqual(hslStar.toRgb(coords), hslStar.toRgb(coords, { hue: 'hsv' }));
+  const blue = hslStar.fromRgb([0, 0, 1]);
+  close(blue.h, hslStar.fromHsvHue(240, { hue: 'oklab' }), 1e-9, 'blue on the oklab axis');
+  close(hslStar.toHsvHue(blue.h), 240, 1e-6, 'back to HSV');
 });
 
 test('greys have saturation 0', () => {

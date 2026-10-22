@@ -7,21 +7,21 @@ import * as hslStar from './hsl-star.js';
 
 // HSL* to hex
 const rgb = hslStar.toRgb({ h: 18, l: 62, s: 0.9 }); 
-hslStar.toHex(rgb); // '#f7694f'
+hslStar.toHex(rgb); // '#ee7231'
 
 // Hex to HSL*
 const blue = hslStar.parseRgb('#0000ff'); 
-hslStar.fromRgb(blue); // { h: 240, l: 32.30…, s: 1 }
+hslStar.fromRgb(blue); // { h: 237.6…, l: 32.30…, s: 1 }
 
 // HSL* to 8-bit sRGB
 const green = hslStar.toRgb({ h: 120, l: 50, s: 1 });
-hslStar.to8bit(green); // [0, 139, 0]
+hslStar.to8bit(green); // [0, 138, 50]
 ```
 
 Or load it from jsDelivr without copying anything:
 
 ```js
-import * as hslStar from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.1.0/js/hsl-star.js';
+import * as hslStar from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.2.0/js/hsl-star.js';
 ```
 
 Add `.min` before `.js` for a minified copy, e.g. `hsl-star.min.js`.
@@ -40,8 +40,10 @@ Add `.min` before `.js` for a minified copy, e.g. `hsl-star.min.js`.
 
 The functions that take or return a hue accept an option `{ hue }`:
 
-- `'hsv'` (default): the hue of HSV and HSL, so 0 is red, 120 green, 240 blue.
-- `'oklab'`: the same hues re-spaced so that equal steps look like roughly equal changes of hue, following OKLab. 0 is still red. Pure blues, which OKLab sees as almost one hue, are kept from collapsing, so the axis is close to OKLab but not exact.
+- `'oklab'` (default): the hues of HSV re-spaced so that equal steps look like roughly equal changes of hue, following OKLab. 0 is still red. Pure blues, which OKLab sees as almost one hue, are kept from collapsing, so the axis is close to OKLab but not exact.
+- `'hsv'`: the hue of HSV and HSL, so 0 is red, 120 green, 240 blue.
+
+Up to version 0.1, `'hsv'` was the default. Pass `{ hue: 'hsv' }` to get the old results.
 
 Use the same option for `toRgb` and `fromRgb`, or the hue will shift. `toHsvHue(h, { hue })` and `fromHsvHue(h, { hue })` convert a hue between the HSV axis and the given one. `HUE_MODES` lists the valid names.
 
@@ -139,7 +141,7 @@ import { interpolatePalette, toneScale } from './palette.js';
 
 const stops = ['#1d3557', '#f7694f'].map(hslStar.parseRgb);
 interpolatePalette(stops, 5).map(hslStar.toHex);
-// ['#1d3557', '#3327d7', '#9d2fb4', '#e63369', '#f7694f']
+// ['#1d3557', '#5327bf', '#9f2faf', '#e3337f', '#f7694f']
 
 const { shades, tints } = toneScale(stops[1], 4);
 shades.map(hslStar.toHex); // ['#621d0c', '#b03b1d']
@@ -149,7 +151,7 @@ tints.map(hslStar.toHex);  // ['#fabdb7']
 From jsDelivr, `palette.js` finds `hsl-star.js` next to it as well:
 
 ```js
-import { interpolatePalette, toneScale } from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.1.0/js/palette.js';
+import { interpolatePalette, toneScale } from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.2.0/js/palette.js';
 ```
 
 All three functions take the `{ hue }` option of the colour space.

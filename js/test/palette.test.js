@@ -32,9 +32,9 @@ test('hue takes the shorter way round', () => {
 });
 
 test('greys borrow the hue of their neighbour', () => {
-  const colours = interpolatePalette([[0.5, 0.5, 0.5], [0, 0, 1]], 5);
+  const colours = interpolatePalette([[0.5, 0.5, 0.5], [0, 0, 1]], 5, { hue: 'hsv' });
   for (const c of colours.slice(1, 4)) {
-    const { h } = hslStar.fromRgb(c);
+    const { h } = hslStar.fromRgb(c, { hue: 'hsv' });
     assert.ok(Math.abs(h - 240) < 2, `hue ${h}`);
   }
 });

@@ -117,7 +117,7 @@ function getPerceptualLut() {
 }
 
 // Convert a hue on the given axis to an HSV hue.
-export function toHsvHue(h, { hue = 'hsv' } = {}) {
+export function toHsvHue(h, { hue = 'oklab' } = {}) {
   h = wrapHue(h);
   if (hue === 'hsv') return h;
   const lut = getPerceptualLut();
@@ -133,7 +133,7 @@ export function toHsvHue(h, { hue = 'hsv' } = {}) {
 }
 
 // Convert an HSV hue to a hue on the given axis.
-export function fromHsvHue(h, { hue = 'hsv' } = {}) {
+export function fromHsvHue(h, { hue = 'oklab' } = {}) {
   h = wrapHue(h);
   if (hue === 'hsv') return h;
   const lut = getPerceptualLut();
@@ -146,7 +146,7 @@ export function fromHsvHue(h, { hue = 'hsv' } = {}) {
 
 // Everything that only depends on hue. Compute it once per column when
 // rendering a whole plane, then call basisToLinear per pixel.
-export function hueBasis(h, { hue = 'hsv' } = {}) {
+export function hueBasis(h, { hue = 'oklab' } = {}) {
   const pure = pureHue(toHsvHue(h, { hue })).map(decode);
   return { pure, y: luminance(pure) };
 }
@@ -166,7 +166,7 @@ export function toLinear({ h, l, s }, options) {
   return basisToLinear(hueBasis(h, options), l, s);
 }
 
-export function fromLinear(rgb, { hue = 'hsv' } = {}) {
+export function fromLinear(rgb, { hue = 'oklab' } = {}) {
   const y = luminance(rgb);
   const l = clamp(lstarFromY(y), 0, 100);
   const max = Math.max(...rgb);

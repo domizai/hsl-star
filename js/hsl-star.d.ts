@@ -16,11 +16,11 @@ export interface HslStar {
   s: number;
 }
 
-/** `'hsv'`: the hue of HSV and HSL. `'oklab'`: re-spaced to even perceived steps. */
+/** `'oklab'`: the HSV hues re-spaced to roughly even perceived steps. `'hsv'`: the hue of HSV and HSL. */
 export type HueMode = 'hsv' | 'oklab';
 
 export interface HueOptions {
-  /** Hue axis, `'hsv'` by default. Use the same one for both directions. */
+  /** Hue axis, `'oklab'` by default. Use the same one for both directions. */
   hue?: HueMode;
 }
 

@@ -4,7 +4,7 @@ A colour space built on sRGB with perceptual lightness.
 
 ## Motivation
 
-In an HSL picker, hues at the same height don't look equally light. HSL* keeps the familiar HSL hue axis but moves every colour up or down, so that each row of the picker has one perceived lightness. 
+In an HSL picker, hues at the same height don't look equally light. HSL* keeps the familiar hue circle but moves every colour up or down, so that each row of the picker has one perceived lightness. 
 
 ![HSL compared with HSL*](assets/hsl-vs-hsl-star.png)
 
@@ -14,7 +14,7 @@ In an HSL picker, hues at the same height don't look equally light. HSL* keeps t
 
 A colour has three components, like HSL:
 
-- `h`: hue, 0–360. By default the hue of HSV and HSL; optionally re-spaced, see [Hue axis](#hue-axis).
+- `h`: hue, 0–360. By default the HSV hue re-spaced to roughly even perceived steps; optionally the plain HSV hue, see [Hue axis](#hue-axis).
 - `s`: saturation, 0–1. 1 is the most vivid sRGB colour of that hue and lightness, 0 the grey of the same lightness.
 - `l`: perceived lightness, CIE L*, 0–100
 
@@ -22,7 +22,7 @@ A colour has three components, like HSL:
 
 All mixing happens in linear light, where luminance is a weighted sum of the channels: Y = 0.2126 R + 0.7152 G + 0.0722 B.
 
-1. **Pure hue:** p is the HSV colour (h, 1, 1), linearised. Its luminance is Y<sub>p</sub>.
+1. **Pure hue:** p is the HSV colour (h, 1, 1) of the hue, linearised; on the default axis, h is first turned into its HSV hue. Its luminance is Y<sub>p</sub>.
 2. **Target luminance:** Y follows from L* by the CIE formula: Y = ((L* + 16) / 116)³, or L* / 903.3 for L* ≤ 8.
 3. **Most vivid colour at that luminance:**
    - below the pure hue's own lightness (Y ≤ Y<sub>p</sub>), darken it: v = (Y / Y<sub>p</sub>) · p
@@ -40,7 +40,7 @@ The inverse is closed form as well. L* comes from the luminance. The hue comes f
 
 ### Hue axis
 
-By default `h` is the HSV hue, whose hues don’t look evenly spaced. HSL* can space them by OKLab hue instead: this reorders the columns into roughly even steps. Colours are still built as above, so tints and shades can drift slightly in hue. Use the same option in both directions.
+By default `h` is the HSV hue re-spaced by OKLab hue (`oklab`), so equal steps look roughly equal. This only reorders the columns: colours are still built as above, so tints and shades can drift slightly in hue. The plain HSV hue (`hsv`), whose steps don't look even, is available as an option. Use the same axis in both directions.
 
 ## HCY, Okhsl and HSL*
 
@@ -50,7 +50,7 @@ The idea isn't new. HSL* is a close relative of HCY (hue, chroma, luma) by Kuzma
 |---|---|---|---|
 | Built on | RGB, usually gamma-encoded | OKLab | sRGB in linear light |
 | Lightness | Luma, Rec. 601 weights | OKLab lightness, close to CIE L* | Exact CIE L* |
-| Hue | HSV hue | OKLab hue | HSV hue, optionally re-spaced to roughly even OKLab steps |
+| Hue | HSV hue | OKLab hue | HSV hue re-spaced to roughly even OKLab steps, or plain HSV hue |
 | Rows of equal lightness | Approximate, up to about 23 L* apart | Close | Exact |
 | Hue of tints and shades | Can drift | Stays perceptually constant | Can drift |
 | Maths | A few multiplications | Cube roots, approximated gamut | Closed form, exactly invertible |
