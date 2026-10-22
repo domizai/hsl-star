@@ -32,21 +32,16 @@ export interface HueBasis {
   y: number;
 }
 
-/** CIE XYZ. */
-export type Xyz = [x: number, y: number, z: number];
 
-/** CIE L*a*b*. */
-export type Lab = [l: number, a: number, b: number];
 
 export const HUE_MODES: readonly HueMode[];
-export const D65_WHITE: Xyz;
 
 // Converting
 
 /** HSL* to gamma-encoded sRGB. */
-export function toRgb(coords: HslStar, options?: HueOptions): Rgb;
+export function toSrgb(coords: HslStar, options?: HueOptions): Rgb;
 /** Gamma-encoded sRGB to HSL*. Greys come back as `{ h: 0, s: 0 }`. */
-export function fromRgb(rgb: RgbInput, options?: HueOptions): HslStar;
+export function fromSrgb(rgb: RgbInput, options?: HueOptions): HslStar;
 /** HSL* to linear-light sRGB. */
 export function toLinear(coords: HslStar, options?: HueOptions): Rgb;
 /** Linear-light sRGB to HSL*. Greys come back as `{ h: 0, s: 0 }`. */
@@ -80,15 +75,6 @@ export function lstarFromY(y: number): number;
 /** CIE L* to luminance. */
 export function yFromLstar(l: number): number;
 
-// CIELAB
-
-/** Linear-light sRGB to CIE XYZ, D65 white. */
-export function linearToXyz(rgb: RgbInput): Xyz;
-/** CIE XYZ to L*a*b* relative to the given white, D65 by default. */
-export function xyzToLab(xyz: Readonly<Xyz>, white?: Readonly<Xyz>): Lab;
-/** Linear-light sRGB to L*a*b*, D65 white. */
-export function linearToLab(rgb: RgbInput): Lab;
-
 // Formatting and parsing
 
 /** `[r, g, b]` with 0–255 integer channels. */
@@ -101,4 +87,57 @@ export function toRgbString(rgb: RgbInput): string;
  * Reads `#rgb`, `#rrggbb` (the `#` is optional), `rgb(r, g, b)` and `r, g, b`
  * with 0–255 channels. Returns gamma-encoded sRGB, or null.
  */
-export function parseRgb(input: string): Rgb | null;
+export function parseSrgb(input: string): Rgb | null;
+
+// Colour object
+
+/** RGB channels by name. */
+export interface RgbChannels {
+  r: number;
+  g: number;
+  b: number;
+}
+
+/** A colour readable in every form. It never changes; with() gives a new one. */
+export interface Colour {
+  /** HSL* coordinates `{ h, l, s }` on the colour's hue axis. */
+  readonly value: HslStar;
+  /** 8-bit RGB, `{ r, g, b }` in 0–255. */
+  readonly rgb: RgbChannels;
+  /** Gamma-encoded sRGB, `{ r, g, b }` in 0–1, unrounded. */
+  readonly srgb: RgbChannels;
+  /** Linear-light sRGB, `{ r, g, b }` in 0–1. */
+  readonly linear: RgbChannels;
+  /** `'#rrggbb'`. */
+  readonly hex: string;
+  /** `'rgb(r, g, b)'` with 0–255 channels. */
+  readonly css: string;
+  /** The same colour with some coordinates changed, as a new colour. */
+  with(changes: Partial<HslStar>): Colour;
+  /** The hex code. */
+  toString(): string;
+}
+
+/** Channels as `{ r, g, b }` or `[r, g, b]`. */
+export type ChannelsInput = Readonly<RgbChannels> | RgbInput;
+
+/** Makes colours. Naming: rgb is 8-bit (0–255), srgb is gamma-encoded (0–1). */
+export interface HslStarFactory {
+  /**
+   * Makes a colour from HSL* `{ h, l, s }`, 8-bit RGB `{ r, g, b }` or
+   * `[r, g, b]` in 0–255, a hex code or CSS `rgb()`. Throws if the input
+   * can't be read.
+   */
+  (input: HslStar | ChannelsInput | string, options?: HueOptions): Colour;
+  /** 8-bit RGB, 0–255. Throws outside that range. */
+  fromRgb(rgb: ChannelsInput, options?: HueOptions): Colour;
+  /** Gamma-encoded sRGB, 0–1, kept exactly. Throws outside that range. */
+  fromSrgb(srgb: ChannelsInput, options?: HueOptions): Colour;
+  /** `'#rrggbb'` or `'#rgb'`, the `#` optional. */
+  fromHex(hex: string, options?: HueOptions): Colour;
+  /** CSS `'rgb(r, g, b)'` with 0–255 channels. */
+  fromCss(css: string, options?: HueOptions): Colour;
+}
+
+declare const hslStar: HslStarFactory;
+export default hslStar;

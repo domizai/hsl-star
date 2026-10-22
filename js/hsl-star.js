@@ -185,40 +185,12 @@ export function fromLinear(rgb, { hue = 'oklab' } = {}) {
 }
 
 // Gamma-encoded sRGB, channels in [0, 1].
-export function toRgb(coords, options) {
+export function toSrgb(coords, options) {
   return toLinear(coords, options).map(encode);
 }
 
-export function fromRgb(rgb, options) {
+export function fromSrgb(rgb, options) {
   return fromLinear(rgb.map(decode), options);
-}
-
-// --- CIELAB -------------------------------------------------------------------
-
-// sRGB primaries to CIE XYZ, D65 white (IEC 61966-2-1).
-const SRGB_TO_XYZ = [
-  [0.4124564, 0.3575761, 0.1804375],
-  [0.2126729, 0.7151522, 0.072175],
-  [0.0193339, 0.119192, 0.9503041],
-];
-export const D65_WHITE = [0.95047, 1, 1.08883];
-
-export function linearToXyz(rgb) {
-  return SRGB_TO_XYZ.map(([r, g, b]) => r * rgb[0] + g * rgb[1] + b * rgb[2]);
-}
-
-const labF = (t) => (t > EPSILON ? Math.cbrt(t) : (KAPPA * t + 16) / 116);
-
-// CIE XYZ to L*a*b* relative to the given white.
-export function xyzToLab([x, y, z], white = D65_WHITE) {
-  const fx = labF(x / white[0]);
-  const fy = labF(y / white[1]);
-  const fz = labF(z / white[2]);
-  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
-}
-
-export function linearToLab(rgb) {
-  return xyzToLab(linearToXyz(rgb));
 }
 
 // --- Formatting and parsing -----------------------------------------------
@@ -237,7 +209,7 @@ export function toRgbString(rgb) {
 
 // Accepts #rgb, #rrggbb (with or without #), rgb(r, g, b) and "r, g, b"
 // with 0–255 channels. Returns gamma-encoded [0, 1] channels or null.
-export function parseRgb(input) {
+export function parseSrgb(input) {
   const str = String(input).trim().toLowerCase();
   let m = str.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/);
   if (m) {
@@ -252,3 +224,99 @@ export function parseRgb(input) {
   }
   return null;
 }
+
+// --- Colour object ----------------------------------------------------------
+
+// A colour, readable in every form. It never changes: with() gives a new one.
+// One made from RGB, sRGB or text keeps those exact values, so its hex code
+// comes back as given; HSL* is only worked out when it's read. Every form is
+// computed once, on first read.
+//
+// Naming: rgb is 8-bit, 0–255; srgb is gamma-encoded, 0–1.
+function makeColour({ srgb = null, coords = null }, hue) {
+  const cache = {};
+  const once = (key, make) => cache[key] ?? (cache[key] = make());
+  const exact = () => once('srgb', () => srgb ?? toSrgb(coords, { hue }));
+  const channels = ([r, g, b]) => ({ r, g, b });
+
+  return Object.freeze({
+    /** HSL* coordinates { h, l, s } on the colour's hue axis. */
+    get value() {
+      return { ...once('value', () => coords ?? fromSrgb(srgb, { hue })) };
+    },
+    /** 8-bit RGB, { r, g, b } in 0–255. */
+    get rgb() {
+      return channels(to8bit(exact()));
+    },
+    /** Gamma-encoded sRGB, { r, g, b } in 0–1, unrounded. */
+    get srgb() {
+      return channels(exact());
+    },
+    /** Linear-light sRGB, { r, g, b } in 0–1. */
+    get linear() {
+      return channels(exact().map(decode));
+    },
+    get hex() {
+      return toHex(exact());
+    },
+    /** CSS rgb() with 0–255 channels. */
+    get css() {
+      return toRgbString(exact());
+    },
+    /** The same colour with some coordinates changed, as a new colour. */
+    with(changes) {
+      return hslStar({ ...this.value, ...changes }, { hue });
+    },
+    toString() {
+      return this.hex;
+    },
+  });
+}
+
+const isCoords = (v) => v && ['h', 'l', 's'].every((k) => Number.isFinite(v[k]));
+const isChannels = (v) => v && ['r', 'g', 'b'].every((k) => Number.isFinite(v[k]));
+
+// Three channels from { r, g, b } or [r, g, b], each within 0–max, or an error.
+function channelsOf(input, max, name) {
+  const values = isChannels(input) ? [input.r, input.g, input.b] : input?.length === 3 ? [...input] : null;
+  if (!values?.every((v) => Number.isFinite(v) && v >= 0 && v <= max)) {
+    throw new RangeError(`${name} takes { r, g, b } or [r, g, b] with channels from 0 to ${max}.`);
+  }
+  return values;
+}
+
+// Makes a colour from HSL* { h, l, s }, RGB { r, g, b } or [r, g, b] in
+// 0–255, a hex code or CSS rgb(). The constructors below do the work for
+// everything but HSL*.
+export default function hslStar(input, options = {}) {
+  if (typeof input === 'string') {
+    return /^\s*rgba?\(/i.test(input) ? hslStar.fromCss(input, options) : hslStar.fromHex(input, options);
+  }
+  if (isCoords(input)) {
+    const coords = { h: wrapHue(input.h), l: clamp(input.l, 0, 100), s: clamp(input.s, 0, 1) };
+    return makeColour({ coords }, options.hue ?? 'oklab');
+  }
+  if (isChannels(input) || input?.length === 3) return hslStar.fromRgb(input, options);
+  throw new TypeError('Make a colour from { h, l, s }, { r, g, b }, [r, g, b], a hex code or rgb().');
+}
+
+/** 8-bit RGB, { r, g, b } or [r, g, b] in 0–255. */
+hslStar.fromRgb = (rgb, { hue = 'oklab' } = {}) =>
+  makeColour({ srgb: channelsOf(rgb, 255, 'fromRgb').map((v) => v / 255) }, hue);
+
+/** Gamma-encoded sRGB, { r, g, b } or [r, g, b] in 0–1. */
+hslStar.fromSrgb = (srgb, { hue = 'oklab' } = {}) => makeColour({ srgb: channelsOf(srgb, 1, 'fromSrgb') }, hue);
+
+/** '#rrggbb' or '#rgb', the # optional. */
+hslStar.fromHex = (hex, { hue = 'oklab' } = {}) => {
+  const srgb = /^\s*#?([0-9a-f]{3}|[0-9a-f]{6})\s*$/i.test(hex) ? parseSrgb(hex) : null;
+  if (!srgb) throw new Error(`Can't read "${hex}" as a hex code.`);
+  return makeColour({ srgb }, hue);
+};
+
+/** CSS 'rgb(r, g, b)' with 0–255 channels. */
+hslStar.fromCss = (css, { hue = 'oklab' } = {}) => {
+  const srgb = /^\s*rgba?\(/i.test(css) ? parseSrgb(css) : null;
+  if (!srgb) throw new Error(`Can't read "${css}" as CSS rgb().`);
+  return makeColour({ srgb }, hue);
+};

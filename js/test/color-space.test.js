@@ -46,8 +46,8 @@ test('8-bit output stays close to the target L*', () => {
   for (let l = 0; l <= 100; l += 1) {
     for (let h = 0; h < 360; h += 2) {
       for (const s of [0, 0.5, 1]) {
-        const hex = hslStar.toHex(hslStar.toRgb({ h, l, s }));
-        const got = hslStar.lstarFromY(hslStar.luminance(hslStar.parseRgb(hex).map(hslStar.decode)));
+        const hex = hslStar.toHex(hslStar.toSrgb({ h, l, s }));
+        const got = hslStar.lstarFromY(hslStar.luminance(hslStar.parseSrgb(hex).map(hslStar.decode)));
         worst = Math.max(worst, Math.abs(got - l));
       }
     }
@@ -58,7 +58,7 @@ test('8-bit output stays close to the target L*', () => {
 test('pure hues land at s = 1 and their own lightness', () => {
   for (let h = 0; h < 360; h += 15) {
     const rgb = hslStar.pureHue(h);
-    const c = hslStar.fromRgb(rgb, { hue: 'hsv' });
+    const c = hslStar.fromSrgb(rgb, { hue: 'hsv' });
     close(c.s, 1, 1e-9, `s at h=${h}`);
     close(c.h, h, 1e-6, `h at h=${h}`);
     close(c.l, hslStar.lstarFromY(hslStar.luminance(rgb.map(hslStar.decode))), 1e-9);
@@ -67,16 +67,16 @@ test('pure hues land at s = 1 and their own lightness', () => {
 
 test('the even perceived (oklab) hue axis is the default', () => {
   const coords = { h: 200, l: 55, s: 0.7 };
-  assert.deepEqual(hslStar.toRgb(coords), hslStar.toRgb(coords, { hue: 'oklab' }));
-  assert.notDeepEqual(hslStar.toRgb(coords), hslStar.toRgb(coords, { hue: 'hsv' }));
-  const blue = hslStar.fromRgb([0, 0, 1]);
+  assert.deepEqual(hslStar.toSrgb(coords), hslStar.toSrgb(coords, { hue: 'oklab' }));
+  assert.notDeepEqual(hslStar.toSrgb(coords), hslStar.toSrgb(coords, { hue: 'hsv' }));
+  const blue = hslStar.fromSrgb([0, 0, 1]);
   close(blue.h, hslStar.fromHsvHue(240, { hue: 'oklab' }), 1e-9, 'blue on the oklab axis');
   close(hslStar.toHsvHue(blue.h), 240, 1e-6, 'back to HSV');
 });
 
 test('greys have saturation 0', () => {
   for (const v of [0, 0.2, 0.5, 1]) {
-    const c = hslStar.fromRgb([v, v, v]);
+    const c = hslStar.fromSrgb([v, v, v]);
     assert.equal(c.s, 0);
     close(c.l, hslStar.lstarFromY(hslStar.decode(v)), 1e-9);
   }
@@ -87,7 +87,7 @@ test('coordinates survive a round trip', () => {
   for (const hue of hslStar.HUE_MODES) {
     for (let i = 0; i < 5000; i++) {
       const coords = { h: rand() * 360, l: 1 + rand() * 98, s: 0.05 + rand() * 0.95 };
-      const back = hslStar.fromRgb(hslStar.toRgb(coords, { hue }), { hue });
+      const back = hslStar.fromSrgb(hslStar.toSrgb(coords, { hue }), { hue });
       assert.ok(hueDiff(back.h, coords.h) < 1e-6, `h ${coords.h} -> ${back.h} (${hue})`);
       close(back.l, coords.l, 1e-9, 'l');
       close(back.s, coords.s, 1e-9, 's');
@@ -100,11 +100,11 @@ test('every sRGB colour maps into range and back to itself', () => {
   for (const hue of hslStar.HUE_MODES) {
     for (let i = 0; i < 20000; i++) {
       const rgb = [rand(), rand(), rand()].map((v) => Math.round(v * 255) / 255);
-      const c = hslStar.fromRgb(rgb, { hue });
+      const c = hslStar.fromSrgb(rgb, { hue });
       assert.ok(c.h >= 0 && c.h < 360, `h ${c.h}`);
       assert.ok(c.l >= 0 && c.l <= 100, `l ${c.l}`);
       assert.ok(c.s >= 0 && c.s <= 1, `s ${c.s}`);
-      assert.equal(hslStar.toHex(hslStar.toRgb(c, { hue })), hslStar.toHex(rgb));
+      assert.equal(hslStar.toHex(hslStar.toSrgb(c, { hue })), hslStar.toHex(rgb));
     }
   }
 });
@@ -142,11 +142,11 @@ test('hsv mode leaves the hue untouched', () => {
 test('formatting and parsing', () => {
   assert.equal(hslStar.toHex([1, 0.5, 0]), '#ff8000');
   assert.equal(hslStar.toRgbString([1, 0.5, 0]), 'rgb(255, 128, 0)');
-  assert.deepEqual(hslStar.parseRgb('#f80').map((v) => v * 255), [255, 136, 0]);
-  assert.deepEqual(hslStar.parseRgb('FF8000').map((v) => v * 255), [255, 128, 0]);
-  assert.deepEqual(hslStar.parseRgb('rgb(255, 128, 0)').map((v) => v * 255), [255, 128, 0]);
-  assert.deepEqual(hslStar.parseRgb('12 34 56').map((v) => v * 255), [12, 34, 56]);
-  assert.equal(hslStar.parseRgb('rgb(300, 0, 0)'), null);
-  assert.equal(hslStar.parseRgb('#12345'), null);
-  assert.equal(hslStar.parseRgb('blue'), null);
+  assert.deepEqual(hslStar.parseSrgb('#f80').map((v) => v * 255), [255, 136, 0]);
+  assert.deepEqual(hslStar.parseSrgb('FF8000').map((v) => v * 255), [255, 128, 0]);
+  assert.deepEqual(hslStar.parseSrgb('rgb(255, 128, 0)').map((v) => v * 255), [255, 128, 0]);
+  assert.deepEqual(hslStar.parseSrgb('12 34 56').map((v) => v * 255), [12, 34, 56]);
+  assert.equal(hslStar.parseSrgb('rgb(300, 0, 0)'), null);
+  assert.equal(hslStar.parseSrgb('#12345'), null);
+  assert.equal(hslStar.parseSrgb('blue'), null);
 });

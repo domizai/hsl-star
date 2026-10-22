@@ -67,7 +67,7 @@ The picker runs at https://domizai.github.io/hsl-star/. The `docs` folder holds 
 
 ## Library
 
-The colour space and the palette functions are in [`js`](js/README.md). Run their tests with `npm test` (Node 18 or later).
+The colour space is in [`js`](js/README.md). Run its tests with `npm test` (Node 18 or later).
 
 ## Known limits
 
