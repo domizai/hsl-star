@@ -141,7 +141,6 @@ test('hsv mode leaves the hue untouched', () => {
 
 test('formatting and parsing', () => {
   assert.equal(hslStar.toHex([1, 0.5, 0]), '#ff8000');
-  assert.equal(hslStar.toRgbString([1, 0.5, 0]), 'rgb(255, 128, 0)');
   assert.deepEqual(hslStar.parseSrgb('#f80').map((v) => v * 255), [255, 136, 0]);
   assert.deepEqual(hslStar.parseSrgb('FF8000').map((v) => v * 255), [255, 128, 0]);
   assert.deepEqual(hslStar.parseSrgb('rgb(255, 128, 0)').map((v) => v * 255), [255, 128, 0]);

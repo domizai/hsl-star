@@ -203,10 +203,6 @@ export function toHex(rgb) {
   return '#' + to8bit(rgb).map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
-export function toRgbString(rgb) {
-  return `rgb(${to8bit(rgb).join(', ')})`;
-}
-
 // Accepts #rgb, #rrggbb (with or without #), rgb(r, g, b) and "r, g, b"
 // with 0–255 channels. Returns gamma-encoded [0, 1] channels or null.
 export function parseSrgb(input) {
@@ -258,10 +254,6 @@ function makeColour({ srgb = null, coords = null }, hue) {
     },
     get hex() {
       return toHex(exact());
-    },
-    /** CSS rgb() with 0–255 channels. */
-    get css() {
-      return toRgbString(exact());
     },
     /** The same colour with some coordinates changed, as a new colour. */
     with(changes) {

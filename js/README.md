@@ -8,14 +8,12 @@ import hslStar from './hsl-star.js';
 const colour = hslStar({ h: 18, l: 62, s: 0.9 });
 colour.hex;    // '#ee7231'
 colour.rgb;    // { r: 238, g: 114, b: 49 }
-colour.rgb.g;  // 114
-colour.css;    // 'rgb(238, 114, 49)'
 
 const blue = hslStar('#0000ff');
 blue.value;    // { h: 237.6…, l: 32.30…, s: 1 }
 blue.value.l;  // 32.30…
 
-colour.with({ l: 30 }).hex;  // '#743412', same hue and saturation, darker
+colour.with({ l: 30 }).hex;  // '#743412', same hue and saturation
 ```
 
 Or load it from jsDelivr without copying anything:
@@ -26,7 +24,7 @@ import hslStar from 'https://cdn.jsdelivr.net/gh/domizai/hsl-star@v0.2.0/js/hsl-
 
 Add `.min` before `.js` for a minified copy, e.g. `hsl-star.min.js`.
 
-## Coordinates
+# Coordinates
 
 | | Range | Meaning |
 |---|---|---|
@@ -36,18 +34,16 @@ Add `.min` before `.js` for a minified copy, e.g. `hsl-star.min.js`.
 
 `l` and `s` outside their range are clamped. The functions below take and return sRGB as arrays `[r, g, b]` with channels in 0–1.
 
-## Hue axis
+# Hue axis
 
 The functions that take or return a hue accept an option `{ hue }`:
 
 - `'oklab'` (default): the hues of HSV re-spaced so that equal steps look like roughly equal changes of hue, following OKLab. 0 is still red. Pure blues, which OKLab sees as almost one hue, are kept from collapsing, so the axis is close to OKLab but not exact.
 - `'hsv'`: the hue of HSV and HSL, so 0 is red, 120 green, 240 blue.
 
-Up to version 0.1, `'hsv'` was the default. Pass `{ hue: 'hsv' }` to get the old results.
-
 Use the same option for `toSrgb` and `fromSrgb`, or the hue will shift. `toHsvHue(h, { hue })` and `fromHsvHue(h, { hue })` convert a hue between the HSV axis and the given one. `HUE_MODES` lists the valid names.
 
-## Colour object
+# Colour object
 
 Throughout the library, **rgb** means 8-bit channels, 0–255, and **srgb** means gamma-encoded channels, 0–1.
 
@@ -76,25 +72,22 @@ Linear-light sRGB, `{ r, g, b }` in 0–1.
 `hex`\
 `'#rrggbb'`. Also what the colour turns into as a string.
 
-`css`\
-`'rgb(r, g, b)'` with 0–255 channels.
-
 `with(changes)`\
 A new colour with some coordinates changed, e.g. `colour.with({ l: 30 })`.
 
 A colour made from RGB, sRGB or text keeps those exact values: `hslStar('#3a7bd5').hex` is always `'#3a7bd5'`, without a detour through HSL*. So do round trips: `hslStar(colour.rgb)` gives the same 8-bit colour, `hslStar.fromSrgb(colour.srgb)` the exact one.
 
-## Edge cases
+# Edge cases
 
 - Greys have no hue. `fromSrgb` returns them as `{ h: 0, s: 0 }`. If you keep a colour in HSL* while editing it, hold on to the previous hue when `s` reaches 0.
 - Every colour HSL* produces lies inside sRGB, and every sRGB colour maps back to exactly one `{ h, l, s }`. Hex output rounds to 8 bits per channel, so a colour read back from its hex code can differ by a few tenths in `l` and `s`.
 - `hslStar()` throws for input it can't read, `parseSrgb` returns `null`.
 
-## Functions
+# Functions
 
 The colour object is built on these. They work on plain numbers and arrays, which makes them the faster choice for many colours at once, like drawing a whole plane pixel by pixel. Import them by name: `import { toSrgb, hueBasis } from './hsl-star.js'`. Note that the function `fromSrgb` returns HSL* coordinates, while the constructor `hslStar.fromSrgb` returns a colour object.
 
-### Converting
+## Converting
 
 `toSrgb({ h, l, s }, { hue })`\
 HSL* to gamma-encoded sRGB.
@@ -114,7 +107,7 @@ Everything that depends on hue alone. Compute it once per hue, for example per c
 `basisToLinear(basis, l, s)`\
 Linear-light sRGB for a basis from `hueBasis`. Call it per pixel.
 
-### Hue
+## Hue
 
 `toHsvHue(h, { hue })`\
 Hue on the given axis to an HSV hue. With `'hsv'` it only wraps the hue to 0–360.
@@ -128,7 +121,7 @@ The fully saturated colour of an HSV hue (S = V = 1), gamma-encoded.
 `oklabHue(rgb)`\
 OKLab hue angle of a linear-light colour.
 
-### Lightness and transfer function
+## Lightness and transfer function
 
 `decode(c)`\
 One sRGB channel, gamma-encoded to linear light.
@@ -145,13 +138,10 @@ Luminance to CIE L*.
 `yFromLstar(l)`\
 CIE L* to luminance.
 
-### Formatting and parsing
+## Formatting and parsing
 
 `toHex(rgb)`\
 `'#rrggbb'`.
-
-`toRgbString(rgb)`\
-`'rgb(r, g, b)'` with 0–255 channels.
 
 `to8bit(rgb)`\
 `[r, g, b]` with 0–255 integer channels.
@@ -159,10 +149,11 @@ CIE L* to luminance.
 `parseSrgb(text)`\
 Reads `#rgb`, `#rrggbb` (the `#` is optional), `rgb(r, g, b)` and `r, g, b` with 0–255 channels. Returns gamma-encoded `[r, g, b]` or `null`.
 
-## Changes from 0.1
+# Changes from 0.1
 
 - New: the colour object, `hslStar()` and its constructors.
 - The default hue axis is now `'oklab'`. Pass `{ hue: 'hsv' }` for the old results.
 - Renamed, because they work with sRGB 0–1: `toRgb` → `toSrgb`, `fromRgb` → `fromSrgb`, `parseRgb` → `parseSrgb`.
+- Removed: `toRgbString`. The hex code is valid CSS, and `.rgb` gives the numbers for `rgb()`.
 - Removed: `linearToXyz`, `xyzToLab`, `linearToLab` and `D65_WHITE`. CIELAB isn't part of HSL*.
 - Removed: `palette.js`. It belongs to the picker, which builds its palettes with the library.

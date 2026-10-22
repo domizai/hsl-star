@@ -11,7 +11,6 @@ test('from HSL*: every form matches the functions', () => {
   assert.equal(c.hex, '#ee7231');
   assert.deepEqual(c.rgb, { r: 238, g: 114, b: 49 });
   assert.equal(c.rgb.g, 114);
-  assert.equal(c.css, 'rgb(238, 114, 49)');
   assert.equal(String(c), '#ee7231');
 });
 

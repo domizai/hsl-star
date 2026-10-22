@@ -81,8 +81,6 @@ export function yFromLstar(l: number): number;
 export function to8bit(rgb: RgbInput): Rgb;
 /** `'#rrggbb'`. */
 export function toHex(rgb: RgbInput): string;
-/** `'rgb(r, g, b)'` with 0–255 channels. */
-export function toRgbString(rgb: RgbInput): string;
 /**
  * Reads `#rgb`, `#rrggbb` (the `#` is optional), `rgb(r, g, b)` and `r, g, b`
  * with 0–255 channels. Returns gamma-encoded sRGB, or null.
@@ -110,8 +108,6 @@ export interface Colour {
   readonly linear: RgbChannels;
   /** `'#rrggbb'`. */
   readonly hex: string;
-  /** `'rgb(r, g, b)'` with 0–255 channels. */
-  readonly css: string;
   /** The same colour with some coordinates changed, as a new colour. */
   with(changes: Partial<HslStar>): Colour;
   /** The hex code. */
