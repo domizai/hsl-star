@@ -78,3 +78,27 @@ test('out-of-range input is wrapped or clamped, bad input throws', () => {
     assert.throws(() => hslStar(bad), undefined, String(bad));
   }
 });
+
+test('CSS hsl() is read as classic HSL, like a browser', () => {
+  for (const [css, hex] of [
+    ['hsl(120, 100%, 50%)', '#00ff00'],
+    ['hsl(120 100% 50%)', '#00ff00'],
+    ['hsl(120 100 50)', '#00ff00'],
+    ['hsla(240, 100%, 50%)', '#0000ff'],
+    ['hsl(0.5turn, 100%, 25%)', '#008080'],
+    ['hsl(-60deg, 100%, 50%)', '#ff00ff'],
+    ['hsl(20.6, 84.8%, 56.3%)', '#ee7231'],
+    ['hsl(120, 150%, 50%)', '#00ff00'],
+  ]) {
+    assert.equal(hslStar(css).hex, hex, css);
+    assert.equal(hslStar.fromCss(css).hex, hex, css);
+  }
+  assert.throws(() => hslStar('hsl(120, 100%, 50%, 0.5)'));
+});
+
+test('error messages say what went wrong', () => {
+  assert.throws(() => hslStar('nope'), /as a colour/);
+  assert.throws(() => hslStar('#12345'), /as a hex code/);
+  assert.throws(() => hslStar('rgb(300, 0, 0)'), /as CSS/);
+  assert.throws(() => hslStar.fromHex('hsl(1, 2%, 3%)'), /as a hex code/);
+});

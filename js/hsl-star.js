@@ -203,8 +203,19 @@ export function toHex(rgb) {
   return '#' + to8bit(rgb).map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
+// Classic HSL, as CSS defines it: h in degrees, s and l in 0–1.
+function classicHsl(h, s, l) {
+  const k = (n) => (n + wrapHue(h) / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  return [0, 8, 4].map((n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)));
+}
+
 // Accepts #rgb, #rrggbb (with or without #), rgb(r, g, b) and "r, g, b"
-// with 0–255 channels. Returns gamma-encoded [0, 1] channels or null.
+// with 0–255 channels, and CSS hsl(h, s%, l%). hsl() is read like a browser
+// reads it, as classic HSL, not HSL*: commas and % signs are optional, the
+// hue may carry deg or turn, and saturation and lightness are clamped to
+// 0–100 %. Alpha isn't supported. Returns gamma-encoded [0, 1] channels or
+// null.
 export function parseSrgb(input) {
   const str = String(input).trim().toLowerCase();
   let m = str.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/);
@@ -217,6 +228,12 @@ export function parseSrgb(input) {
   if (m) {
     const channels = m.slice(1, 4).map(Number);
     if (channels.every((v) => v <= 255)) return channels.map((v) => v / 255);
+  }
+  m = str.match(/^hsla?\(\s*(-?[\d.]+)(deg|turn)?\s*[,\s]\s*(-?[\d.]+)%?\s*[,\s]\s*(-?[\d.]+)%?\s*\)$/);
+  if (m) {
+    const h = Number(m[1]) * (m[2] === 'turn' ? 360 : 1);
+    const [s, l] = [m[3], m[4]].map((v) => clamp(Number(v) / 100, 0, 1));
+    if ([h, s, l].every(Number.isFinite)) return classicHsl(h, s, l);
   }
   return null;
 }
@@ -282,14 +299,16 @@ function channelsOf(input, max, name) {
 // everything but HSL*.
 export default function hslStar(input, options = {}) {
   if (typeof input === 'string') {
-    return /^\s*rgba?\(/i.test(input) ? hslStar.fromCss(input, options) : hslStar.fromHex(input, options);
+    if (/^\s*(rgb|hsl)a?\(/i.test(input)) return hslStar.fromCss(input, options);
+    if (/^\s*#?[0-9a-f]+\s*$/i.test(input)) return hslStar.fromHex(input, options);
+    throw new Error(`Can't read "${input}" as a colour. Use a hex code like '#ee7231', rgb() or hsl().`);
   }
   if (isCoords(input)) {
     const coords = { h: wrapHue(input.h), l: clamp(input.l, 0, 100), s: clamp(input.s, 0, 1) };
     return makeColour({ coords }, options.hue ?? 'oklab');
   }
   if (isChannels(input) || input?.length === 3) return hslStar.fromRgb(input, options);
-  throw new TypeError('Make a colour from { h, l, s }, { r, g, b }, [r, g, b], a hex code or rgb().');
+  throw new TypeError('Make a colour from { h, l, s }, { r, g, b }, [r, g, b], a hex code, rgb() or hsl().');
 }
 
 /** 8-bit RGB, { r, g, b } or [r, g, b] in 0–255. */
@@ -302,13 +321,17 @@ hslStar.fromSrgb = (srgb, { hue = 'oklab' } = {}) => makeColour({ srgb: channels
 /** '#rrggbb' or '#rgb', the # optional. */
 hslStar.fromHex = (hex, { hue = 'oklab' } = {}) => {
   const srgb = /^\s*#?([0-9a-f]{3}|[0-9a-f]{6})\s*$/i.test(hex) ? parseSrgb(hex) : null;
-  if (!srgb) throw new Error(`Can't read "${hex}" as a hex code.`);
+  if (!srgb) throw new Error(`Can't read "${hex}" as a hex code. Use six or three hex digits, like '#ee7231' or '#e73'.`);
   return makeColour({ srgb }, hue);
 };
 
-/** CSS 'rgb(r, g, b)' with 0–255 channels. */
+/** CSS 'rgb(r, g, b)' with 0–255 channels, or 'hsl(h, s%, l%)' as classic HSL. */
 hslStar.fromCss = (css, { hue = 'oklab' } = {}) => {
-  const srgb = /^\s*rgba?\(/i.test(css) ? parseSrgb(css) : null;
-  if (!srgb) throw new Error(`Can't read "${css}" as CSS rgb().`);
+  const srgb = /^\s*(rgb|hsl)a?\(/i.test(css) ? parseSrgb(css) : null;
+  if (!srgb) {
+    throw new Error(
+      `Can't read "${css}" as CSS. Use rgb() with channels from 0 to 255 or hsl() with percentages, like 'rgb(238, 114, 49)' or 'hsl(20.6, 84.8%, 56.3%)'.`,
+    );
+  }
   return makeColour({ srgb }, hue);
 };

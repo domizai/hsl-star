@@ -83,7 +83,8 @@ export function to8bit(rgb: RgbInput): Rgb;
 export function toHex(rgb: RgbInput): string;
 /**
  * Reads `#rgb`, `#rrggbb` (the `#` is optional), `rgb(r, g, b)` and `r, g, b`
- * with 0–255 channels. Returns gamma-encoded sRGB, or null.
+ * with 0–255 channels, and CSS `hsl(h, s%, l%)` as classic HSL. Returns
+ * gamma-encoded sRGB, or null.
  */
 export function parseSrgb(input: string): Rgb | null;
 
@@ -121,8 +122,9 @@ export type ChannelsInput = Readonly<RgbChannels> | RgbInput;
 export interface HslStarFactory {
   /**
    * Makes a colour from HSL* `{ h, l, s }`, 8-bit RGB `{ r, g, b }` or
-   * `[r, g, b]` in 0–255, a hex code or CSS `rgb()`. Throws if the input
-   * can't be read.
+   * `[r, g, b]` in 0–255, a hex code, or CSS `rgb()` or `hsl()`. CSS `hsl()`
+   * is classic HSL, as in a browser, not HSL*. Throws if the input can't be
+   * read.
    */
   (input: HslStar | ChannelsInput | string, options?: HueOptions): Colour;
   /** 8-bit RGB, 0–255. Throws outside that range. */
@@ -131,7 +133,7 @@ export interface HslStarFactory {
   fromSrgb(srgb: ChannelsInput, options?: HueOptions): Colour;
   /** `'#rrggbb'` or `'#rgb'`, the `#` optional. */
   fromHex(hex: string, options?: HueOptions): Colour;
-  /** CSS `'rgb(r, g, b)'` with 0–255 channels. */
+  /** CSS `'rgb(r, g, b)'` with 0–255 channels, or `'hsl(h, s%, l%)'` as classic HSL. */
   fromCss(css: string, options?: HueOptions): Colour;
 }
 
