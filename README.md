@@ -14,7 +14,7 @@ In an HSL picker, hues at the same height don't look equally light, and hue step
 
 - **Intuitive saturation.** Saturation s runs from the neutral grey of that lightness to the edge of the sRGB gamut. Every HSL* coordinate in range is a real sRGB colour, without clipping.
 
-- **Invertible.** HSL* and sRGB convert into each other in closed form. Every sRGB colour has exactly one coordinate, and the conversion back is exact (greys have no hue).
+- **Invertible.** HSL* and sRGB convert into each other directly. Everything is closed form except the OKLab hue axis, which is read from a table. Every sRGB colour has exactly one coordinate, and the conversion back is exact.
 
 ![HSL compared with HSL*](assets/hsl-vs-hsl-star.png)
 
@@ -32,11 +32,22 @@ HSL* replaces the lightness of HSL with CIE L*, defines saturation relative to t
 - $l$: CIE L* lightness [0–100]
 - $s$: sRGB gamut-relative saturation [0–1]
 
+## The hue axis
+
+The hue h is the HSV hue, re-spaced so that equal steps of h are roughly equal steps of OKLab hue. The re-spacing H maps an HSV hue x to h.
+
+1. Take the pure colour HSV (x, 1, 1), linearise it and convert it to OKLab. Its hue angle is θ(x) = atan2(b, a).
+2. Unwrap θ so it runs on without jumps, starting at 0 for red.
+3. Let every HSV degree advance H by at least 0.25°. OKLab sees the pure blues between about HSV 222° and 242° as nearly one hue, and between 232° and 240° θ even runs slightly backwards. Without this, H couldn't be inverted.
+4. Scale H so a full turn is 360°.
+
+H has no closed form, so the implementations tabulate it and interpolate linearly. HSL* to sRGB uses the inverse H⁻¹(h) to find the HSV hue, and sRGB to HSL* uses H. On the HSV hue axis, H does nothing.
+
 ## HSL* to sRGB
 
 All mixing happens in linear light, where luminance is a weighted sum of the channels with weights that add up to 1. So scaling a colour scales its luminance, and mixing two colours mixes their luminances in the same proportion. That's what keeps every step below at exactly Y. Vectors are linear RGB, and Y on its own stands for the grey (Y, Y, Y).
 
-1. **Pure colour.** The hue h is turned into an HSV hue (on the default axis by undoing the re-spacing by OKLab). The pure colour of that hue is HSV (h, 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
+1. **Pure colour.** The HSV hue of h is H⁻¹(h), and the pure colour of that hue is HSV (H⁻¹(h), 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
 
    ```math
    C = \begin{cases} C' / 12.92 & C' \le 0.04045 \\ \left(\dfrac{C' + 0.055}{1.055}\right)^{2.4} & \text{otherwise} \end{cases}
@@ -98,7 +109,7 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
    p = \frac{c - m}{r}
    ```
 
-   Encoded, p is an HSV colour with S = V = 1, and its HSV hue is the hue, converted to the hue axis in use.
+   Encoded, p is an HSV colour with S = V = 1. Its HSV hue x gives the hue h = H(x).
 
 5. **Saturation.** The most vivid colour of that hue and luminance has this channel range, with Y<sub>p</sub> of the hue found in step 4.
 
@@ -111,8 +122,6 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
    ```math
    s = \frac{r}{r_{\max}}
    ```
-
-Each step undoes one step of the forward direction, in closed form, without iteration.
 
 # Limitations
 

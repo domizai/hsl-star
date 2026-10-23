@@ -42,4 +42,4 @@ float hslStarFromHsvHue(float hsv)
 
 # Accuracy
 
-The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.003°. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis comes from two tables generated from the JavaScript module. `npm run glsl` regenerates them, and `npm test` fails if they're out of date.
+The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.011°. A round trip from sRGB to HSL* and back returns every colour unchanged, apart from float rounding. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis comes from a table generated from the JavaScript module, read in both directions. `npm run glsl` regenerates it, and `npm test` fails if it's out of date.

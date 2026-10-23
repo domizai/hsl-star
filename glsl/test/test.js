@@ -2,6 +2,8 @@
 // compares them with the library. Forward: HSL* to sRGB, judged on the
 // largest channel difference. Inverse: 8-bit sRGB to HSL*, judged on each
 // coordinate; hue only where there is a hue to speak of (s above 0.01).
+// Round trip: 8-bit sRGB to HSL* and back, all in the shader, which must
+// give the same colour.
 
 import * as hslStar from '../../js/hsl-star.js';
 
@@ -9,7 +11,8 @@ const AXES = { oklab: 0, hsv: 1 };
 
 // What counts as a pass. A forward difference under 1/255 can change an
 // 8-bit channel by 1 at most.
-const LIMITS = { srgb: 1 / 255, l: 0.01, s: 0.002, h: 0.1 };
+// A round trip only has float32 rounding to lose, far below 1/255.
+const LIMITS = { srgb: 1 / 255, l: 0.01, s: 0.002, h: 0.1, roundTrip: 0.1 / 255 };
 
 function createRunner(library) {
   const canvas = document.createElement('canvas');
@@ -140,6 +143,34 @@ function testInverse(run, axis) {
   };
 }
 
+// --- Round trip: every 8-bit colour with channels in steps of 3 --------------
+
+const TRIP_STEPS = 86;
+const TRIP_COUNT = TRIP_STEPS ** 3;
+const TRIP_WIDTH = 1024;
+const TRIP_MAIN = `void main() {
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  int i = p.y * ${TRIP_WIDTH} + p.x;
+  vec3 rgb = vec3(i % ${TRIP_STEPS}, (i / ${TRIP_STEPS}) % ${TRIP_STEPS}, i / ${TRIP_STEPS * TRIP_STEPS}) * (3.0 / 255.0);
+  o = vec4(hslStarToSrgb(hslStarFromSrgb(rgb, uAxis), uAxis) - rgb, 1.0);
+}`;
+
+function testRoundTrip(run, axis) {
+  const pixels = run(TRIP_MAIN, TRIP_WIDTH, Math.ceil(TRIP_COUNT / TRIP_WIDTH), AXES[axis]);
+  let worst = 0;
+  let changed = 0;
+  for (let i = 0; i < TRIP_COUNT; i++) {
+    const error = Math.max(...pixels.subarray(i * 4, i * 4 + 3).map(Math.abs));
+    worst = Math.max(worst, error);
+    if (error * 255 >= 0.5) changed++;
+  }
+  return {
+    name: `sRGB to HSL* and back, ${axis} hue`,
+    pass: worst < LIMITS.roundTrip,
+    detail: `largest difference ${(worst * 255).toFixed(4)} / 255 over ${TRIP_COUNT} colours; ${changed} come back as a different 8-bit colour`,
+  };
+}
+
 // --- Report -------------------------------------------------------------------
 
 async function main() {
@@ -147,7 +178,7 @@ async function main() {
   try {
     const library = await fetch('../hsl-star.glsl', { cache: 'no-store' }).then((r) => r.text());
     const run = createRunner(library);
-    const rows = Object.keys(AXES).flatMap((axis) => [testForward(run, axis), testInverse(run, axis)]);
+    const rows = Object.keys(AXES).flatMap((axis) => [testForward(run, axis), testInverse(run, axis), testRoundTrip(run, axis)]);
     window.glslResults = rows;
     const table = document.createElement('table');
     for (const row of rows) {
