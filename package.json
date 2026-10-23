@@ -1,6 +1,6 @@
 {
   "name": "hsl-star",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Equal-lightness colour space and colour picker built on sRGB",
   "type": "module",
   "private": true,
