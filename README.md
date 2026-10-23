@@ -38,43 +38,43 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 1. **Pure colour.** The hue h is turned into an HSV hue (on the default axis by undoing the re-spacing by OKLab). The pure colour of that hue is HSV (h, 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
 
-   $$
+   ```math
    C = \begin{cases} C' / 12.92 & C' \le 0.04045 \\ \left(\dfrac{C' + 0.055}{1.055}\right)^{2.4} & \text{otherwise} \end{cases}
-   $$
+   ```
 
    The luminance of p is the weighted sum of its linear channels, with the Rec. 709 weights of sRGB. Y<sub>p</sub> is the luminance at which that hue is most vivid.
 
-   $$
+   ```math
    Y_p = 0.2126\,p_R + 0.7152\,p_G + 0.0722\,p_B
-   $$
+   ```
 
 2. **Target luminance.** The luminance the colour must have follows from L*, by the inverse of the CIE lightness formula, with κ = 24389/27 ≈ 903.3.
 
-   $$
+   ```math
    Y = \begin{cases} \left(\dfrac{L^* + 16}{116}\right)^3 & L^* > 8 \\ L^* / \kappa & \text{otherwise} \end{cases}
-   $$
+   ```
 
 3. **Most vivid colour at that luminance.** Below the pure colour, darken it. Above it, mix it with white.
 
-   $$
+   ```math
    v = \begin{cases} \dfrac{Y}{Y_p}\,p & Y \le Y_p \\ (1 - t)\,p + t & Y > Y_p, \quad t = \dfrac{Y - Y_p}{1 - Y_p} \end{cases}
-   $$
+   ```
 
    v has luminance Y in both cases, and it lies on the edge of the sRGB gamut. Below Y<sub>p</sub> one channel is 0, above it one channel is 1.
 
 4. **Saturation.** Mix with the grey of the same luminance.
 
-   $$
+   ```math
    c = s\,v + (1 - s)\,Y
-   $$
+   ```
 
    The luminance stays Y.
 
 5. **Output.** Encode each channel of c with the sRGB transfer function, the inverse of the one in step 1.
 
-   $$
+   ```math
    C' = \begin{cases} 12.92\,C & C \le 0.0031308 \\ 1.055\,C^{1/2.4} - 0.055 & \text{otherwise} \end{cases}
-   $$
+   ```
 
 ## sRGB to HSL*
 
@@ -82,35 +82,35 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 2. **Lightness.** The luminance of c is the weighted sum of its channels, as in step 1 above, and L* follows from it by the CIE lightness formula, with ε = 216/24389 ≈ 0.008856.
 
-   $$
+   ```math
    Y = 0.2126\,c_R + 0.7152\,c_G + 0.0722\,c_B
-   $$
+   ```
 
-   $$
+   ```math
    L^* = \begin{cases} 116\,\sqrt[3]{Y} - 16 & Y > \varepsilon \\ \kappa\,Y & \text{otherwise} \end{cases}
-   $$
+   ```
 
 3. **Channel range.** With m = min(c) and M = max(c), the range is r = M − m. If r = 0, the colour is a grey, with s = 0 and an undefined hue (0).
 
 4. **Hue.** In the forward direction, c is a scaled pure colour plus a grey part. Removing the grey part and the scaling gives the pure colour back.
 
-   $$
+   ```math
    p = \frac{c - m}{r}
-   $$
+   ```
 
    Encoded, p is an HSV colour with S = V = 1, and its HSV hue is the hue, converted to the hue axis in use.
 
 5. **Saturation.** The most vivid colour of that hue and luminance has this channel range, with Y<sub>p</sub> of the hue found in step 4.
 
-   $$
+   ```math
    r_{\max} = \begin{cases} Y / Y_p & Y \le Y_p \\ (1 - Y) / (1 - Y_p) & Y > Y_p \end{cases}
-   $$
+   ```
 
    Mixing with grey scales the range by s, so s is the ratio of the two.
 
-   $$
+   ```math
    s = \frac{r}{r_{\max}}
-   $$
+   ```
 
 Each step undoes one step of the forward direction, in closed form, without iteration.
 
