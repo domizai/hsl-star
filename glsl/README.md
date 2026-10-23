@@ -2,6 +2,8 @@
 
 [hsl-star.glsl](./hsl-star.glsl) is the HSL* colour space for shaders, written for GLSL ES 3.00 (WebGL2) and desktop GLSL 1.30 and later. The precision line must be `highp`, or dark tones band on some phones. Read more about the HSL* colour space [here](../README.md).
 
+Try it on [Shadertoy](https://www.shadertoy.com/view/NXKXzz).
+
 ```glsl
 vec3 hslStar = vec3(uv.x * 360.0, uv.y * 100.0, 0.9);
 vec3 srgb = hslStarToSrgb(hslStar);
@@ -42,4 +44,4 @@ float hslStarFromHsvHue(float hsv)
 
 # Accuracy
 
-The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.011°. A round trip from sRGB to HSL* and back returns every colour unchanged, apart from float rounding. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis comes from a table generated from the JavaScript module, read in both directions. `npm run glsl` regenerates it, and `npm test` fails if it's out of date.
+The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.011°. A round trip from sRGB to HSL* and back returns every colour unchanged, apart from float rounding. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis comes from a table generated from the JavaScript module, read in both directions. `npm run sync` regenerates it, and `npm test` fails if it's out of date.

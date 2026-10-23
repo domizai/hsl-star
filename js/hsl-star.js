@@ -1,9 +1,12 @@
-// HSL* - Equal-lightness colour space built on sRGB.
+// HSL* 0.2.0
+// A simple colour space built on sRGB with perceptual lightness and perceptually spaced hue.
+// https://github.com/domizai/hsl-star
+// License: MIT
 //
 // Coordinates:
-//   h  hue in degrees [0, 360). By default this is the HSV hue of the pure
-//      colour on the edge of the RGB cube. With { hue: 'oklab' } the axis is
-//      re-spaced so equal steps are equal steps of OKLab hue (0 = red).
+//   h  hue in degrees [0, 360). By default the axis is re-spaced so equal
+//      steps are equal steps of OKLab hue (0 = red). With { hue: 'hsv' } it
+//      is the HSV hue of the pure colour on the edge of the RGB cube.
 //   l  perceived lightness as CIE L* [0, 100]. Every colour with the same l
 //      has the same luminance, so it converts to the same grey.
 //   s  saturation [0, 1]. 1 is the most vivid colour of that hue and
