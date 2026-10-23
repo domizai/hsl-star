@@ -20,9 +20,9 @@ In an HSL picker, hues at the same height don't look equally light, and hue step
 
 HSL in the top row, HSL* in the bottom row, each at full saturation and converted to grey.
 
-# Library
+# Implementations
 
-Currently there is only a JavaScript implementation. See the [js](js/README.md) folder for details.
+Currently there is only a [JavaScript](js/README.md) and a [GLSL](glsl/README.md) implementation.
 
 # The HSL* colour space 
 

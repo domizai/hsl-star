@@ -8,6 +8,7 @@
   "main": "js/hsl-star.js",
   "types": "js/hsl-star.d.ts",
   "scripts": {
-    "test": "node --test 'js/test/*.test.js'"
+    "test": "node --test 'js/test/*.test.js' 'glsl/test/*.test.js'",
+    "glsl": "node glsl/generate.js"
   }
 }
