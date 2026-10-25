@@ -129,6 +129,8 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 - **Hue is only roughly even.** By default h is the HSV hue re-spaced by OKLab, so equal steps look roughly equal. This only reorders the hues, while the colours are still built in RGB, so tints and shades can drift slightly in perceived hue, most of all in the blues. The plain HSV hue is available as an option.
 
+- **Kinks at six hues.** Saturation 1 follows the edge of the sRGB gamut, which has corners. At red, green and blue for shades and yellow, cyan and magenta for tints, the direction in which a colour changes with hue turns abruptly, though the ΔE 2000 per step stays about the same. That's why ΔE 2000 ellipses drawn in HSL* have corners there.
+
 - **L\* has known limits.** It doesn't model the Helmholtz–Kohlrausch effect, so very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
 
 - **sRGB only.** Display P3 or print would need their own gamut.
