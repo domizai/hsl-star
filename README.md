@@ -1,20 +1,20 @@
 # HSL*
 
-A simple colour space built on sRGB with perceptual lightness and perceptually spaced hue. 
+A simple color space built on sRGB with perceptual lightness and perceptually spaced hue. Every combination of hue, saturation and L* is a valid sRGB color, nothing gets clipped or falls out of gamut.
 
-Try the [colour picker](https://domizai.github.io/hsl-star/). 
+Try it [here](https://domizai.github.io/hsl-star/), with a color picker, palettes and a contrast checker.
 
 # Motivation
 
-In an HSL picker, hues at the same height don't look equally light, and hue steps are also not perceptually uniform. The HSL* colour space improves upon HSL by addressing perceptual inconsistencies in lightness and hue. It offers:
+In an HSL picker, hues at the same height don't look equally light, and hue steps are also not perceptually uniform. The HSL* color space improves upon HSL by addressing perceptual inconsistencies in lightness and hue. It offers:
 
-- **Consistent lightness.** All colours in a row of the picker share the same lightness, whatever their hue or saturation, and convert to the same grey.
+- **Consistent lightness.** All colors in a row of the picker share the same lightness, whatever their hue or saturation, and convert to the same grey.
 
 - **Perceptually spaced hue.** Hues are spaced according to OKLab, so equal steps in h look roughly equal in perceived hue. 
 
-- **Intuitive saturation.** Saturation s runs from the neutral grey of that lightness to the edge of the sRGB gamut. Every HSL* coordinate in range is a real sRGB colour, without clipping.
+- **Intuitive saturation.** Saturation s runs from the neutral grey of that lightness to the edge of the sRGB gamut. Every HSL* coordinate in range is a real sRGB color, without clipping.
 
-- **Invertible.** HSL* and sRGB convert into each other directly. Everything is closed form except the OKLab hue axis, which is read from a table. Every sRGB colour has exactly one coordinate, and the conversion back is exact.
+- **Invertible.** HSL* and sRGB convert into each other directly. Everything is closed form except the OKLab hue axis, which is read from a table. Every sRGB color has exactly one coordinate, and the conversion back is exact.
 
 ![HSL compared with HSL*](assets/hsl-vs-hsl-star.png)
 
@@ -24,7 +24,7 @@ HSL in the top row, HSL* in the bottom row, each at full saturation and converte
 
 Currently there is only a [JavaScript](js/README.md) and a [GLSL](glsl/README.md) implementation.
 
-# The HSL* colour space 
+# The HSL* color space 
 
 HSL* replaces the lightness of HSL with CIE L*, defines saturation relative to the sRGB gamut at a given hue and lightness, and spaces its hue by OKLab. 
 
@@ -36,7 +36,7 @@ HSL* replaces the lightness of HSL with CIE L*, defines saturation relative to t
 
 The hue h is the HSV hue, re-spaced so that equal steps of h are roughly equal steps of OKLab hue. The re-spacing H maps an HSV hue x to h.
 
-1. Take the pure colour HSV (x, 1, 1), linearise it and convert it to OKLab. Its hue angle is θ(x) = atan2(b, a).
+1. Take the pure color HSV (x, 1, 1), linearise it and convert it to OKLab. Its hue angle is θ(x) = atan2(b, a).
 2. Unwrap θ so it runs on without jumps, starting at 0 for red.
 3. Let every HSV degree advance H by at least 0.25°. OKLab sees the pure blues between about HSV 222° and 242° as nearly one hue, and between 232° and 240° θ even runs slightly backwards. Without this, H couldn't be inverted.
 4. Scale H so a full turn is 360°.
@@ -45,9 +45,9 @@ H has no closed form, so the implementations tabulate it and interpolate linearl
 
 ## HSL* to sRGB
 
-All mixing happens in linear light, where luminance is a weighted sum of the channels with weights that add up to 1. So scaling a colour scales its luminance, and mixing two colours mixes their luminances in the same proportion. That's what keeps every step below at exactly Y. Vectors are linear RGB, and Y on its own stands for the grey (Y, Y, Y).
+All mixing happens in linear light, where luminance is a weighted sum of the channels with weights that add up to 1. So scaling a color scales its luminance, and mixing two colors mixes their luminances in the same proportion. That's what keeps every step below at exactly Y. Vectors are linear RGB, and Y on its own stands for the grey (Y, Y, Y).
 
-1. **Pure colour.** The HSV hue of h is H⁻¹(h), and the pure colour of that hue is HSV (H⁻¹(h), 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
+1. **Pure color.** The HSV hue of h is H⁻¹(h), and the pure color of that hue is HSV (H⁻¹(h), 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
 
    ```math
    C = \begin{cases} C' / 12.92 & C' \le 0.04045 \\ \left(\dfrac{C' + 0.055}{1.055}\right)^{2.4} & \text{otherwise} \end{cases}
@@ -59,13 +59,13 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
    Y_p = 0.2126\,p_R + 0.7152\,p_G + 0.0722\,p_B
    ```
 
-2. **Target luminance.** The luminance the colour must have follows from L*, by the inverse of the CIE lightness formula, with κ = 24389/27 ≈ 903.3.
+2. **Target luminance.** The luminance the color must have follows from L*, by the inverse of the CIE lightness formula, with κ = 24389/27 ≈ 903.3.
 
    ```math
    Y = \begin{cases} \left(\dfrac{L^* + 16}{116}\right)^3 & L^* > 8 \\ L^* / \kappa & \text{otherwise} \end{cases}
    ```
 
-3. **Most vivid colour at that luminance.** Below the pure colour, darken it. Above it, mix it with white.
+3. **Most vivid color at that luminance.** Below the pure color, darken it. Above it, mix it with white.
 
    ```math
    v = \begin{cases} \dfrac{Y}{Y_p}\,p & Y \le Y_p \\ (1 - t)\,p + t & Y > Y_p, \quad t = \dfrac{Y - Y_p}{1 - Y_p} \end{cases}
@@ -101,17 +101,17 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
    L^* = \begin{cases} 116\,\sqrt[3]{Y} - 16 & Y > \varepsilon \\ \kappa\,Y & \text{otherwise} \end{cases}
    ```
 
-3. **Channel range.** With m = min(c) and M = max(c), the range is r = M − m. If r = 0, the colour is a grey, with s = 0 and an undefined hue (0).
+3. **Channel range.** With m = min(c) and M = max(c), the range is r = M − m. If r = 0, the color is a grey, with s = 0 and an undefined hue (0).
 
-4. **Hue.** In the forward direction, c is a scaled pure colour plus a grey part. Removing the grey part and the scaling gives the pure colour back.
+4. **Hue.** In the forward direction, c is a scaled pure color plus a grey part. Removing the grey part and the scaling gives the pure color back.
 
    ```math
    p = \frac{c - m}{r}
    ```
 
-   Encoded, p is an HSV colour with S = V = 1. Its HSV hue x gives the hue h = H(x).
+   Encoded, p is an HSV color with S = V = 1. Its HSV hue x gives the hue h = H(x).
 
-5. **Saturation.** The most vivid colour of that hue and luminance has this channel range, with Y<sub>p</sub> of the hue found in step 4.
+5. **Saturation.** The most vivid color of that hue and luminance has this channel range, with Y<sub>p</sub> of the hue found in step 4.
 
    ```math
    r_{\max} = \begin{cases} Y / Y_p & Y \le Y_p \\ (1 - Y) / (1 - Y_p) & Y > Y_p \end{cases}
@@ -125,11 +125,11 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 # Limitations
 
-- **Saturation isn't perceptually uniform.** It's a share of what sRGB can show at that hue and lightness, not a measure of colourfulness. At L* 40, a fully saturated blue is more than twice as colourful as a fully saturated yellow, at L* 80 the other way round.
+- **Saturation isn't perceptually uniform.** It's a share of what sRGB can show at that hue and lightness, not a measure of colorfulness. At L* 40, a fully saturated blue is more than twice as colorful as a fully saturated yellow, at L* 80 the other way round.
 
-- **Hue is only roughly even.** By default h is the HSV hue re-spaced by OKLab, so equal steps look roughly equal. This only reorders the hues, while the colours are still built in RGB, so tints and shades can drift slightly in perceived hue, most of all in the blues. The plain HSV hue is available as an option.
+- **Hue is only roughly even.** By default h is the HSV hue re-spaced by OKLab, so equal steps look roughly equal. This only reorders the hues, while the colors are still built in RGB, so tints and shades can drift slightly in perceived hue, most of all in the blues. The plain HSV hue is available as an option.
 
-- **Kinks at six hues.** Saturation 1 follows the edge of the sRGB gamut, which has corners. At red, green and blue for shades and yellow, cyan and magenta for tints, the direction in which a colour changes with hue turns abruptly, though the ΔE 2000 per step stays about the same. That's why ΔE 2000 ellipses drawn in HSL* have corners there.
+- **Kinks at six hues.** Saturation 1 follows the edge of the sRGB gamut, which has corners. At red, green and blue for shades and yellow, cyan and magenta for tints, the direction in which a color changes with hue turns abruptly, though the ΔE 2000 per step stays about the same. That's why ΔE 2000 ellipses drawn in HSL* have corners there.
 
 - **L\* has known limits.** It doesn't model the Helmholtz–Kohlrausch effect, so very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
 
@@ -146,12 +146,12 @@ All three give an HSL-like interface with perceptually meaningful lightness and 
 | Rows of equal lightness | Exact | Close | Exact |
 | Hue | CIELUV hue angle | OKLab hue | HSV hue, spaced by OKLab |
 | Hue of tints and shades | Constant in CIELUV | Constant in OKLab | Can drift slightly |
-| Saturation | CIELUV chroma as a share of the most the gamut allows | Chroma, interpolated through fitted values to behave evenly | Linear mix between grey and the most vivid sRGB colour |
+| Saturation | CIELUV chroma as a share of the most the gamut allows | Chroma, interpolated through fitted values to behave evenly | Linear mix between grey and the most vivid sRGB color |
 | Gamut boundary | Ray intersected with six lines per lightness | Approximated with fitted functions | Built into the construction |
 
 **HSLuv** ([hsluv.org](https://www.hsluv.org/math/)) has the same lightness as HSL* and both use CIE L*, so both give rows of exactly equal lightness. But HSLuv defines hue, lightness and chroma in the device-independent CIELUV, and only then limits the result to sRGB. Saturation is the chroma as a share of the maximum at that lightness and hue. That keeps the hue constant through tints and shades, but every conversion goes through XYZ and CIELUV.
 
-HSL* skips both and builds colours directly in RGB, where the gamut boundary is simply one channel at 0 or 1. Its saturation is therefore not chroma, and not designed to be perceptually uniform. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
+HSL* skips both and builds colors directly in RGB, where the gamut boundary is simply one channel at 0 or 1. Its saturation is therefore not chroma, and not designed to be perceptually uniform. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
 
 **Okhsl** ([Björn Ottosson](https://bottosson.github.io/posts/colorpicker/)) uses OKLab for lightness, hue and saturation. Its lightness is OKLab's, adjusted to come close to CIE L*, so rows are close to equally light but not exact. It also only approximates the sRGB gamut boundary. Okhsl tries harder than HSL* to make hue and saturation perceptually consistent.
 

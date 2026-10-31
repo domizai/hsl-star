@@ -1,21 +1,21 @@
 // HSL* 0.2.1
-// A simple colour space built on sRGB with perceptual lightness and perceptually spaced hue.
+// A simple color space built on sRGB with perceptual lightness and perceptually spaced hue.
 // https://github.com/domizai/hsl-star
 // License: MIT
 //
 // Coordinates:
 //   h  hue in degrees [0, 360). By default the axis is re-spaced so equal
 //      steps are equal steps of OKLab hue (0 = red). With { hue: 'hsv' } it
-//      is the HSV hue of the pure colour on the edge of the RGB cube.
-//   l  perceived lightness as CIE L* [0, 100]. Every colour with the same l
+//      is the HSV hue of the pure color on the edge of the RGB cube.
+//   l  perceived lightness as CIE L* [0, 100]. Every color with the same l
 //      has the same luminance, so it converts to the same grey.
-//   s  saturation [0, 1]. 1 is the most vivid colour of that hue and
+//   s  saturation [0, 1]. 1 is the most vivid color of that hue and
 //      lightness inside sRGB, 0 is the grey of the same lightness.
 //
 // Construction (all mixing in linear light):
-//   below the pure hue's own lightness the pure colour is scaled towards
-//   black (a shade), above it the pure colour is mixed with white (a tint).
-//   Saturation mixes that vivid colour with the grey of equal luminance.
+//   below the pure hue's own lightness the pure color is scaled towards
+//   black (a shade), above it the pure color is mixed with white (a tint).
+//   Saturation mixes that vivid color with the grey of equal luminance.
 //   Because luminance is linear in linear RGB, every step is closed form.
 
 const WEIGHTS = [0.2126, 0.7152, 0.0722];
@@ -52,7 +52,7 @@ export function yFromLstar(l) {
 
 // --- Hue ------------------------------------------------------------------
 
-// Pure colour of an HSV hue (S = V = 1), gamma-encoded.
+// Pure color of an HSV hue (S = V = 1), gamma-encoded.
 export function pureHue(h) {
   const x = wrapHue(h) / 60;
   const i = Math.floor(x) % 6;
@@ -81,7 +81,7 @@ export function oklabHue([r, g, b]) {
   return wrapHue((Math.atan2(bb, a) * 180) / Math.PI);
 }
 
-// Lookup table from HSV hue to OKLab hue of the pure colours, unwrapped and
+// Lookup table from HSV hue to OKLab hue of the pure colors, unwrapped and
 // shifted so red is 0. Index i corresponds to HSV hue i * 360 / LUT_SIZE.
 //
 // OKLab sees the pure blues between roughly HSV 222° and 242° as almost the
@@ -157,7 +157,7 @@ export function hueBasis(h, { hue = 'oklab' } = {}) {
 export function basisToLinear({ pure, y: yPure }, l, s) {
   const y = yFromLstar(clamp(l, 0, 100));
   s = clamp(s, 0, 1);
-  // Vivid colour = a * pure + b (shade if b = 0, tint otherwise).
+  // Vivid color = a * pure + b (shade if b = 0, tint otherwise).
   const a = y <= yPure ? y / yPure : (1 - y) / (1 - yPure);
   const b = y <= yPure ? 0 : 1 - a;
   const k = s * a;
@@ -178,7 +178,7 @@ export function fromLinear(rgb, { hue = 'oklab' } = {}) {
   if (range < 1e-9) return { h: 0, l, s: 0 };
 
   // Mixing with grey and scaling keep the normalised linear channels equal
-  // to the pure colour's, so normalising recovers it exactly.
+  // to the pure color's, so normalising recovers it exactly.
   const hsv = hsvHueOf(rgb.map((v) => encode((v - min) / range)));
   const pure = pureHue(hsv).map(decode);
   const yPure = luminance(pure);
@@ -241,22 +241,22 @@ export function parseSrgb(input) {
   return null;
 }
 
-// --- Colour object ----------------------------------------------------------
+// --- Color object ----------------------------------------------------------
 
-// A colour, readable in every form. It never changes: with() gives a new one.
+// A color, readable in every form. It never changes: with() gives a new one.
 // One made from RGB, sRGB or text keeps those exact values, so its hex code
 // comes back as given; HSL* is only worked out when it's read. Every form is
 // computed once, on first read.
 //
 // Naming: rgb is 8-bit, 0–255; srgb is gamma-encoded, 0–1.
-function makeColour({ srgb = null, coords = null }, hue) {
+function makeColor({ srgb = null, coords = null }, hue) {
   const cache = {};
   const once = (key, make) => cache[key] ?? (cache[key] = make());
   const exact = () => once('srgb', () => srgb ?? toSrgb(coords, { hue }));
   const channels = ([r, g, b]) => ({ r, g, b });
 
   return Object.freeze({
-    /** HSL* coordinates { h, l, s } on the colour's hue axis. */
+    /** HSL* coordinates { h, l, s } on the color's hue axis. */
     get value() {
       return { ...once('value', () => coords ?? fromSrgb(srgb, { hue })) };
     },
@@ -275,7 +275,7 @@ function makeColour({ srgb = null, coords = null }, hue) {
     get hex() {
       return toHex(exact());
     },
-    /** The same colour with some coordinates changed, as a new colour. */
+    /** The same color with some coordinates changed, as a new color. */
     with(changes) {
       return hslStar({ ...this.value, ...changes }, { hue });
     },
@@ -297,35 +297,35 @@ function channelsOf(input, max, name) {
   return values;
 }
 
-// Makes a colour from HSL* { h, l, s }, RGB { r, g, b } or [r, g, b] in
+// Makes a color from HSL* { h, l, s }, RGB { r, g, b } or [r, g, b] in
 // 0–255, a hex code or CSS rgb(). The constructors below do the work for
 // everything but HSL*.
 export default function hslStar(input, options = {}) {
   if (typeof input === 'string') {
     if (/^\s*(rgb|hsl)a?\(/i.test(input)) return hslStar.fromCss(input, options);
     if (/^\s*#?[0-9a-f]+\s*$/i.test(input)) return hslStar.fromHex(input, options);
-    throw new Error(`Can't read "${input}" as a colour. Use a hex code like '#ee7231', rgb() or hsl().`);
+    throw new Error(`Can't read "${input}" as a color. Use a hex code like '#ee7231', rgb() or hsl().`);
   }
   if (isCoords(input)) {
     const coords = { h: wrapHue(input.h), l: clamp(input.l, 0, 100), s: clamp(input.s, 0, 1) };
-    return makeColour({ coords }, options.hue ?? 'oklab');
+    return makeColor({ coords }, options.hue ?? 'oklab');
   }
   if (isChannels(input) || input?.length === 3) return hslStar.fromRgb(input, options);
-  throw new TypeError('Make a colour from { h, l, s }, { r, g, b }, [r, g, b], a hex code, rgb() or hsl().');
+  throw new TypeError('Make a color from { h, l, s }, { r, g, b }, [r, g, b], a hex code, rgb() or hsl().');
 }
 
 /** 8-bit RGB, { r, g, b } or [r, g, b] in 0–255. */
 hslStar.fromRgb = (rgb, { hue = 'oklab' } = {}) =>
-  makeColour({ srgb: channelsOf(rgb, 255, 'fromRgb').map((v) => v / 255) }, hue);
+  makeColor({ srgb: channelsOf(rgb, 255, 'fromRgb').map((v) => v / 255) }, hue);
 
 /** Gamma-encoded sRGB, { r, g, b } or [r, g, b] in 0–1. */
-hslStar.fromSrgb = (srgb, { hue = 'oklab' } = {}) => makeColour({ srgb: channelsOf(srgb, 1, 'fromSrgb') }, hue);
+hslStar.fromSrgb = (srgb, { hue = 'oklab' } = {}) => makeColor({ srgb: channelsOf(srgb, 1, 'fromSrgb') }, hue);
 
 /** '#rrggbb' or '#rgb', the # optional. */
 hslStar.fromHex = (hex, { hue = 'oklab' } = {}) => {
   const srgb = /^\s*#?([0-9a-f]{3}|[0-9a-f]{6})\s*$/i.test(hex) ? parseSrgb(hex) : null;
   if (!srgb) throw new Error(`Can't read "${hex}" as a hex code. Use six or three hex digits, like '#ee7231' or '#e73'.`);
-  return makeColour({ srgb }, hue);
+  return makeColor({ srgb }, hue);
 };
 
 /** CSS 'rgb(r, g, b)' with 0–255 channels, or 'hsl(h, s%, l%)' as classic HSL. */
@@ -336,5 +336,5 @@ hslStar.fromCss = (css, { hue = 'oklab' } = {}) => {
       `Can't read "${css}" as CSS. Use rgb() with channels from 0 to 255 or hsl() with percentages, like 'rgb(238, 114, 49)' or 'hsl(20.6, 84.8%, 56.3%)'.`,
     );
   }
-  return makeColour({ srgb }, hue);
+  return makeColor({ srgb }, hue);
 };

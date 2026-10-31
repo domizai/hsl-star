@@ -3,7 +3,7 @@
 // largest channel difference. Inverse: 8-bit sRGB to HSL*, judged on each
 // coordinate; hue only where there is a hue to speak of (s above 0.01).
 // Round trip: 8-bit sRGB to HSL* and back, all in the shader, which must
-// give the same colour.
+// give the same color.
 
 import * as hslStar from '../../js/hsl-star.js';
 
@@ -109,7 +109,7 @@ function testForward(run, axis) {
   };
 }
 
-// --- Inverse: every 8-bit colour with channels in steps of 5 -----------------
+// --- Inverse: every 8-bit color with channels in steps of 5 -----------------
 
 const STEPS = 52;
 const COUNT = STEPS ** 3;
@@ -139,11 +139,11 @@ function testInverse(run, axis) {
   return {
     name: `sRGB to HSL*, ${axis} hue`,
     pass: worst.h < LIMITS.h && worst.l < LIMITS.l && worst.s < LIMITS.s,
-    detail: `largest difference h ${worst.h.toFixed(4)}°, l ${worst.l.toFixed(4)}, s ${worst.s.toFixed(5)} over ${COUNT} colours`,
+    detail: `largest difference h ${worst.h.toFixed(4)}°, l ${worst.l.toFixed(4)}, s ${worst.s.toFixed(5)} over ${COUNT} colors`,
   };
 }
 
-// --- Round trip: every 8-bit colour with channels in steps of 3 --------------
+// --- Round trip: every 8-bit color with channels in steps of 3 --------------
 
 const TRIP_STEPS = 86;
 const TRIP_COUNT = TRIP_STEPS ** 3;
@@ -167,7 +167,7 @@ function testRoundTrip(run, axis) {
   return {
     name: `sRGB to HSL* and back, ${axis} hue`,
     pass: worst < LIMITS.roundTrip,
-    detail: `largest difference ${(worst * 255).toFixed(4)} / 255 over ${TRIP_COUNT} colours; ${changed} come back as a different 8-bit colour`,
+    detail: `largest difference ${(worst * 255).toFixed(4)} / 255 over ${TRIP_COUNT} colors; ${changed} come back as a different 8-bit color`,
   };
 }
 

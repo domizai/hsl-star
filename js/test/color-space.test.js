@@ -95,7 +95,7 @@ test('coordinates survive a round trip', () => {
   }
 });
 
-test('every sRGB colour maps into range and back to itself', () => {
+test('every sRGB color maps into range and back to itself', () => {
   const rand = rng(2);
   for (const hue of hslStar.HUE_MODES) {
     for (let i = 0; i < 20000; i++) {

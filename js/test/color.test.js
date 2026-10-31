@@ -59,13 +59,13 @@ test('the hue axis follows the option', () => {
   assert.ok(Math.abs(hslStar('#0000ff', { hue: 'hsv' }).value.h - 240) < 1e-9);
 });
 
-test('with() makes a new colour and leaves the old one', () => {
+test('with() makes a new color and leaves the old one', () => {
   const c = hslStar({ h: 18, l: 62, s: 0.9 });
   const dark = c.with({ l: 30 });
   assert.deepEqual(dark.value, { h: 18, l: 30, s: 0.9 });
   assert.equal(c.value.l, 62);
   assert.ok(Object.isFrozen(c));
-  // Changing what a getter returned doesn't change the colour.
+  // Changing what a getter returned doesn't change the color.
   c.value.l = 0;
   c.srgb.r = 0;
   assert.equal(c.value.l, 62);
@@ -97,7 +97,7 @@ test('CSS hsl() is read as classic HSL, like a browser', () => {
 });
 
 test('error messages say what went wrong', () => {
-  assert.throws(() => hslStar('nope'), /as a colour/);
+  assert.throws(() => hslStar('nope'), /as a color/);
   assert.throws(() => hslStar('#12345'), /as a hex code/);
   assert.throws(() => hslStar('rgb(300, 0, 0)'), /as CSS/);
   assert.throws(() => hslStar.fromHex('hsl(1, 2%, 3%)'), /as a hex code/);

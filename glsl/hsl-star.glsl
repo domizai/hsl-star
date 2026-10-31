@@ -1,5 +1,5 @@
 // HSL* 0.2.1
-// A simple colour space built on sRGB with perceptual lightness and perceptually spaced hue.
+// A simple color space built on sRGB with perceptual lightness and perceptually spaced hue.
 // https://github.com/domizai/hsl-star
 // License: MIT
 //
@@ -10,10 +10,10 @@
 // Coordinates, as vec3(h, l, s):
 //   h  hue in degrees [0, 360). By default the axis is re-spaced so equal
 //      steps are equal steps of OKLab hue (0 = red). With HSL_STAR_HSV it is
-//      the HSV hue of the pure colour on the edge of the RGB cube.
-//   l  perceived lightness as CIE L* [0, 100]. Every colour with the same l
+//      the HSV hue of the pure color on the edge of the RGB cube.
+//   l  perceived lightness as CIE L* [0, 100]. Every color with the same l
 //      has the same luminance, so it converts to the same grey.
-//   s  saturation [0, 1]. 1 is the most vivid colour of that hue and
+//   s  saturation [0, 1]. 1 is the most vivid color of that hue and
 //      lightness inside sRGB, 0 is the grey of the same lightness.
 //
 // The same construction as hsl-star.js, which stays the reference. The
@@ -47,12 +47,12 @@ float hslStarLstarFromY(float y) {
 
 // --- Hue ----------------------------------------------------------------------
 
-// Pure colour of an HSV hue (S = V = 1), gamma-encoded.
+// Pure color of an HSV hue (S = V = 1), gamma-encoded.
 vec3 hslStarPureHue(float h) {
   return clamp(abs(mod(h / 60.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
 }
 
-// HSV hue of a gamma-encoded colour whose smallest channel is 0 and largest 1.
+// HSV hue of a gamma-encoded color whose smallest channel is 0 and largest 1.
 float hslStarHsvHueOf(vec3 c) {
   float h;
   if (c.r >= c.g && c.r >= c.b) h = c.g - c.b;
@@ -230,7 +230,7 @@ vec3 hslStarToLinear(vec3 hls, int hueAxis) {
   float yPure = dot(pure, HSL_STAR_WEIGHTS);
   float y = hslStarYFromLstar(clamp(hls.y, 0.0, 100.0));
   float s = clamp(hls.z, 0.0, 1.0);
-  // Vivid colour = a * pure + b (shade if b = 0, tint otherwise).
+  // Vivid color = a * pure + b (shade if b = 0, tint otherwise).
   float a = y <= yPure ? y / yPure : (1.0 - y) / (1.0 - yPure);
   float b = y <= yPure ? 0.0 : 1.0 - a;
   return clamp(s * a * pure + (s * b + (1.0 - s) * y), 0.0, 1.0);
@@ -245,7 +245,7 @@ vec3 hslStarFromLinear(vec3 rgb, int hueAxis) {
   if (range < 1e-6) return vec3(0.0, l, 0.0);
 
   // Mixing with grey and scaling keep the normalised linear channels equal
-  // to the pure colour's, so normalising recovers it exactly.
+  // to the pure color's, so normalising recovers it exactly.
   float hsv = hslStarHsvHueOf(hslStarEncode((rgb - bottom) / range));
   float yPure = dot(hslStarDecode(hslStarPureHue(hsv)), HSL_STAR_WEIGHTS);
   float vividRange = y <= yPure ? y / yPure : (1.0 - y) / (1.0 - yPure);

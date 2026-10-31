@@ -6,7 +6,7 @@ export type Rgb = [r: number, g: number, b: number];
 /** RGB as accepted by the functions: any three numbers, channels 0–1. */
 export type RgbInput = readonly [r: number, g: number, b: number];
 
-/** A colour in HSL*. */
+/** A color in HSL*. */
 export interface HslStar {
   /** Hue in degrees, 0–360. Values outside wrap around. */
   h: number;
@@ -26,7 +26,7 @@ export interface HueOptions {
 
 /** What hueBasis computes once per hue, for basisToLinear. */
 export interface HueBasis {
-  /** The pure colour of the hue, linear light. */
+  /** The pure color of the hue, linear light. */
   pure: Rgb;
   /** Its luminance. */
   y: number;
@@ -57,9 +57,9 @@ export function basisToLinear(basis: HueBasis, l: number, s: number): Rgb;
 export function toHsvHue(h: number, options?: HueOptions): number;
 /** HSV hue to a hue on the given axis. */
 export function fromHsvHue(h: number, options?: HueOptions): number;
-/** The fully saturated colour of an HSV hue (S = V = 1), gamma-encoded. */
+/** The fully saturated color of an HSV hue (S = V = 1), gamma-encoded. */
 export function pureHue(h: number): Rgb;
-/** OKLab hue angle of a linear-light colour, 0–360. */
+/** OKLab hue angle of a linear-light color, 0–360. */
 export function oklabHue(rgb: RgbInput): number;
 
 // Lightness and transfer function
@@ -68,7 +68,7 @@ export function oklabHue(rgb: RgbInput): number;
 export function decode(c: number): number;
 /** One channel, linear light to gamma-encoded. Clamps to 0–1. */
 export function encode(c: number): number;
-/** Relative luminance Y of a linear-light colour (Rec. 709 weights). */
+/** Relative luminance Y of a linear-light color (Rec. 709 weights). */
 export function luminance(rgb: RgbInput): number;
 /** Luminance to CIE L*. */
 export function lstarFromY(y: number): number;
@@ -88,7 +88,7 @@ export function toHex(rgb: RgbInput): string;
  */
 export function parseSrgb(input: string): Rgb | null;
 
-// Colour object
+// Color object
 
 /** RGB channels by name. */
 export interface RgbChannels {
@@ -97,9 +97,9 @@ export interface RgbChannels {
   b: number;
 }
 
-/** A colour readable in every form. It never changes; with() gives a new one. */
-export interface Colour {
-  /** HSL* coordinates `{ h, l, s }` on the colour's hue axis. */
+/** A color readable in every form. It never changes; with() gives a new one. */
+export interface Color {
+  /** HSL* coordinates `{ h, l, s }` on the color's hue axis. */
   readonly value: HslStar;
   /** 8-bit RGB, `{ r, g, b }` in 0–255. */
   readonly rgb: RgbChannels;
@@ -109,8 +109,8 @@ export interface Colour {
   readonly linear: RgbChannels;
   /** `'#rrggbb'`. */
   readonly hex: string;
-  /** The same colour with some coordinates changed, as a new colour. */
-  with(changes: Partial<HslStar>): Colour;
+  /** The same color with some coordinates changed, as a new color. */
+  with(changes: Partial<HslStar>): Color;
   /** The hex code. */
   toString(): string;
 }
@@ -118,23 +118,23 @@ export interface Colour {
 /** Channels as `{ r, g, b }` or `[r, g, b]`. */
 export type ChannelsInput = Readonly<RgbChannels> | RgbInput;
 
-/** Makes colours. Naming: rgb is 8-bit (0–255), srgb is gamma-encoded (0–1). */
+/** Makes colors. Naming: rgb is 8-bit (0–255), srgb is gamma-encoded (0–1). */
 export interface HslStarFactory {
   /**
-   * Makes a colour from HSL* `{ h, l, s }`, 8-bit RGB `{ r, g, b }` or
+   * Makes a color from HSL* `{ h, l, s }`, 8-bit RGB `{ r, g, b }` or
    * `[r, g, b]` in 0–255, a hex code, or CSS `rgb()` or `hsl()`. CSS `hsl()`
    * is classic HSL, as in a browser, not HSL*. Throws if the input can't be
    * read.
    */
-  (input: HslStar | ChannelsInput | string, options?: HueOptions): Colour;
+  (input: HslStar | ChannelsInput | string, options?: HueOptions): Color;
   /** 8-bit RGB, 0–255. Throws outside that range. */
-  fromRgb(rgb: ChannelsInput, options?: HueOptions): Colour;
+  fromRgb(rgb: ChannelsInput, options?: HueOptions): Color;
   /** Gamma-encoded sRGB, 0–1, kept exactly. Throws outside that range. */
-  fromSrgb(srgb: ChannelsInput, options?: HueOptions): Colour;
+  fromSrgb(srgb: ChannelsInput, options?: HueOptions): Color;
   /** `'#rrggbb'` or `'#rgb'`, the `#` optional. */
-  fromHex(hex: string, options?: HueOptions): Colour;
+  fromHex(hex: string, options?: HueOptions): Color;
   /** CSS `'rgb(r, g, b)'` with 0–255 channels, or `'hsl(h, s%, l%)'` as classic HSL. */
-  fromCss(css: string, options?: HueOptions): Colour;
+  fromCss(css: string, options?: HueOptions): Color;
 }
 
 declare const hslStar: HslStarFactory;
