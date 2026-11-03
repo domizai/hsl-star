@@ -47,7 +47,9 @@ H has no closed form, so the implementations tabulate it and interpolate linearl
 
 All mixing happens in linear light, where luminance is a weighted sum of the channels with weights that add up to 1. So scaling a color scales its luminance, and mixing two colors mixes their luminances in the same proportion. That's what keeps every step below at exactly Y. Vectors are linear RGB, and Y on its own stands for the grey (Y, Y, Y).
 
-1. **Pure color.** The HSV hue of h is H⁻¹(h), and the pure color of that hue is HSV (H⁻¹(h), 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
+1. **Hue.** The HSV hue of h is x = H⁻¹(h), from [the hue axis](#the-hue-axis).
+
+2. **Pure color.** The pure color of that hue is HSV (x, 1, 1). Each of its gamma-encoded channels C′ is linearised with the sRGB transfer function, which gives p.
 
    ```math
    C = \begin{cases} C' / 12.92 & C' \le 0.04045 \\ \left(\dfrac{C' + 0.055}{1.055}\right)^{2.4} & \text{otherwise} \end{cases}
@@ -59,13 +61,13 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
    Y_p = 0.2126\,p_R + 0.7152\,p_G + 0.0722\,p_B
    ```
 
-2. **Target luminance.** The luminance the color must have follows from L*, by the inverse of the CIE lightness formula, with κ = 24389/27 ≈ 903.3.
+3. **Target luminance.** The luminance the color must have follows from L*, by the inverse of the CIE lightness formula, with κ = 24389/27 ≈ 903.3.
 
    ```math
    Y = \begin{cases} \left(\dfrac{L^* + 16}{116}\right)^3 & L^* > 8 \\ L^* / \kappa & \text{otherwise} \end{cases}
    ```
 
-3. **Most vivid color at that luminance.** Below the pure color, darken it. Above it, mix it with white.
+4. **Most vivid color at that luminance.** Below the pure color, darken it. Above it, mix it with white.
 
    ```math
    v = \begin{cases} \dfrac{Y}{Y_p}\,p & Y \le Y_p \\ (1 - t)\,p + t & Y > Y_p, \quad t = \dfrac{Y - Y_p}{1 - Y_p} \end{cases}
@@ -73,7 +75,7 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
    v has luminance Y in both cases, and it lies on the edge of the sRGB gamut. Below Y<sub>p</sub> one channel is 0, above it one channel is 1.
 
-4. **Saturation.** Mix with the grey of the same luminance.
+5. **Saturation.** Mix with the grey of the same luminance.
 
    ```math
    c = s\,v + (1 - s)\,Y
@@ -81,7 +83,7 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
    The luminance stays Y.
 
-5. **Output.** Encode each channel of c with the sRGB transfer function, the inverse of the one in step 1.
+6. **Output.** Encode each channel of c with the sRGB transfer function, the inverse of the one in step 2.
 
    ```math
    C' = \begin{cases} 12.92\,C & C \le 0.0031308 \\ 1.055\,C^{1/2.4} - 0.055 & \text{otherwise} \end{cases}
@@ -89,9 +91,9 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 ## sRGB to HSL*
 
-1. **Linear light.** Linearise the channels as in step 1 above, giving c.
+1. **Linear light.** Linearise the channels as in step 2 above, giving c.
 
-2. **Lightness.** The luminance of c is the weighted sum of its channels, as in step 1 above, and L* follows from it by the CIE lightness formula, with ε = 216/24389 ≈ 0.008856.
+2. **Lightness.** The luminance of c is the weighted sum of its channels, as in step 2 above, and L* follows from it by the CIE lightness formula, with ε = 216/24389 ≈ 0.008856.
 
    ```math
    Y = 0.2126\,c_R + 0.7152\,c_G + 0.0722\,c_B
@@ -103,15 +105,21 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 3. **Channel range.** With m = min(c) and M = max(c), the range is r = M − m. If r = 0, the color is a grey, with s = 0 and an undefined hue (0).
 
-4. **Hue.** In the forward direction, c is a scaled pure color plus a grey part. Removing the grey part and the scaling gives the pure color back.
+4. **Pure color.** In the forward direction, c is a scaled pure color plus a grey part. Removing the grey part and the scaling gives the pure color back, in linear light.
 
    ```math
    p = \frac{c - m}{r}
    ```
 
-   Encoded, p is an HSV color with S = V = 1. Its HSV hue x gives the hue h = H(x).
+   Encoded, p is an HSV color with S = V = 1, and x is its HSV hue. Its luminance is Y<sub>p</sub>, the weighted sum of its channels as before.
 
-5. **Saturation.** The most vivid color of that hue and luminance has this channel range, with Y<sub>p</sub> of the hue found in step 4.
+   ```math
+   Y_p = 0.2126\,p_R + 0.7152\,p_G + 0.0722\,p_B
+   ```
+
+5. **Hue.** The hue is h = H(x), from [the hue axis](#the-hue-axis).
+
+6. **Saturation.** The most vivid color of that hue and luminance has this channel range.
 
    ```math
    r_{\max} = \begin{cases} Y / Y_p & Y \le Y_p \\ (1 - Y) / (1 - Y_p) & Y > Y_p \end{cases}
