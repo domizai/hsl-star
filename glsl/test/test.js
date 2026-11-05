@@ -72,17 +72,19 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
   };
 }
 
-// --- Forward: hues every half degree, L* every 5, s every 0.25 --------------
+// --- Forward: hues every half degree, L* every 5, s every 0.1 ---------------
 
-const FORWARD = { width: 720, lSteps: 21, sSteps: 5 };
+// Saturation in tenths, so the low ones, where the saturation correction
+// acts most, are well covered.
+const FORWARD = { width: 720, lSteps: 21, sSteps: 11 };
 const forwardInput = (x, y) => ({
   h: x * 0.5 + 0.25,
   l: (y % FORWARD.lSteps) * 5,
-  s: Math.floor(y / FORWARD.lSteps) * 0.25,
+  s: Math.floor(y / FORWARD.lSteps) * 0.1,
 });
 const FORWARD_MAIN = `void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
-  vec3 hls = vec3(float(p.x) * 0.5 + 0.25, float(p.y % ${FORWARD.lSteps}) * 5.0, float(p.y / ${FORWARD.lSteps}) * 0.25);
+  vec3 hls = vec3(float(p.x) * 0.5 + 0.25, float(p.y % ${FORWARD.lSteps}) * 5.0, float(p.y / ${FORWARD.lSteps}) * 0.1);
   o = vec4(hslStarToSrgb(hls, uAxis), 1.0);
 }`;
 

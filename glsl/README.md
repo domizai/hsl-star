@@ -39,9 +39,12 @@ float hslStarLstarFromY(float y)
 // Between the HSL* hue on the OKLab axis and the HSV hue
 float hslStarToHsvHue(float h)
 float hslStarFromHsvHue(float hsv)
+
+// OKLab chroma of a linear-light color, what the saturation correction measures
+float hslStarOklabChroma(vec3 linear)
 ```
 
 
 # Accuracy
 
-The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.011°. A round trip from sRGB to HSL* and back returns every color unchanged, apart from float rounding. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis comes from a table generated from the JavaScript module, read in both directions. `npm run sync` regenerates it, and `npm test` fails if it's out of date.
+The shader stays within a third of an 8-bit step of [hsl-star.js](../js/hsl-star.js), and converting back gives the same L* and saturation, with hues within 0.011°. A round trip from sRGB to HSL* and back returns every color unchanged, apart from float rounding. To check it on your GPU, serve the repository root and open [/glsl/test/](./test/index.html). The OKLab hue axis and the saturation correction's reference chroma come from tables generated from the JavaScript module, and both directions read the same ones. `npm run sync` regenerates them, and `npm test` fails if they're out of date.

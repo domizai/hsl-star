@@ -12,7 +12,10 @@ export interface HslStar {
   h: number;
   /** Lightness as CIE L*, 0–100. */
   l: number;
-  /** Saturation, 0–1. Not a percentage. */
+  /**
+   * Saturation, 0–1. Not a percentage. Toned down near grey for hues more
+   * colorful than the median hue at that lightness.
+   */
   s: number;
 }
 
@@ -61,6 +64,8 @@ export function fromHsvHue(h: number, options?: HueOptions): number;
 export function pureHue(h: number): Rgb;
 /** OKLab hue angle of a linear-light color, 0–360. */
 export function oklabHue(rgb: RgbInput): number;
+/** OKLab chroma of a linear-light color, what the saturation correction measures. */
+export function oklabChroma(rgb: RgbInput): number;
 
 // Lightness and transfer function
 

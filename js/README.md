@@ -9,10 +9,10 @@ import hslStar from './hsl-star.js';
 
 let col = hslStar({ h: 18, s: 0.9, l: 62 });
 col.value;  // { h: 18, s: 0.9, l: 62 }
-col.hex;    // '#ee7231'
-col.rgb;    // { r: 238, g: 114, b: 49 }
-col.srgb;   // { r: 0.935, g: 0.446, b: 0.191 }
-col.linear; // { r: 0.858, g: 0.167, b: 0.03 }
+col.hex;    // '#ee7232'
+col.rgb;    // { r: 238, g: 114, b: 50 }
+col.srgb;   // { r: 0.933, g: 0.446, b: 0.195 }
+col.linear; // { r: 0.855, g: 0.168, b: 0.032 }
 
 // change lightness
 col = col.with({ l: 30 });
@@ -123,6 +123,9 @@ pureHue(h: number): Rgb
 
 // OKLab hue angle of a linear-light color, 0–360
 oklabHue(linear: Rgb): number
+
+// OKLab chroma of a linear-light color, what the saturation correction measures
+oklabChroma(linear: Rgb): number
 ```
 
 **Lightness and transfer function**
@@ -163,7 +166,7 @@ parseSrgb(text: string): Rgb | null
 The signatures above use these names. They're the same as in [hsl-star.d.ts](./hsl-star.d.ts).
 
 ```ts
-type HslStar = { h: number; l: number; s: number };  // h 0–360, l 0–100 (CIE L*), s 0–1
+type HslStar = { h: number; l: number; s: number };  // h 0–360, l 0–100 (CIE L*), s 0–1 (corrected, see the main README)
 type Rgb = [r: number, g: number, b: number];        // sRGB or linear light, 0–1
 type Channels = { r: number; g: number; b: number };
 type HueOptions = { hue?: 'oklab' | 'hsv' };         // hue axis, 'oklab' by default

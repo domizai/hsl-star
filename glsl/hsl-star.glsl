@@ -1,4 +1,4 @@
-// HSL* 0.2.1
+// HSL* 0.3.0
 // A simple color space built on sRGB with perceptual lightness and perceptually spaced hue.
 // https://github.com/domizai/hsl-star
 // License: MIT
@@ -14,11 +14,16 @@
 //   l  perceived lightness as CIE L* [0, 100]. Every color with the same l
 //      has the same luminance, so it converts to the same grey.
 //   s  saturation [0, 1]. 1 is the most vivid color of that hue and
-//      lightness inside sRGB, 0 is the grey of the same lightness.
+//      lightness inside sRGB, 0 is the grey of the same lightness. In
+//      between, hues whose most vivid color is more colorful than the
+//      median hue's at that lightness are toned down near grey, so equal
+//      saturation looks about equally colorful across hues.
 //
-// The same construction as hsl-star.js, which stays the reference. The
-// OKLab hue axis comes from a table generated from it (scripts/sync.js);
-// results stay within a third of an 8-bit step of the library's.
+// The same construction as hsl-star.js, which stays the reference,
+// including its saturation correction. The OKLab hue axis and the
+// correction's reference chroma come from tables generated from it
+// (scripts/sync.js); results stay within a third of an 8-bit step of the
+// library's.
 
 const int HSL_STAR_OKLAB = 0;
 const int HSL_STAR_HSV = 1;
@@ -196,6 +201,38 @@ const float HSL_STAR_TO_HSV_HUE[1025] = float[](
   351.9655, 352.6089, 353.3048, 354.0689, 354.9251, 355.9155, 357.1267, 358.5610,
   360.0000
 );
+
+const int HSL_STAR_CHROMA_STEPS = 200;
+
+// OKLab chroma of the median hue's most vivid color at L* 0, 0.5, …, 100.
+const float HSL_STAR_REFERENCE_CHROMA[201] = float[](
+  0.000000000, 0.022789191, 0.028712581, 0.032867700, 0.036175585, 0.038968968, 0.041410707, 0.043594153,
+  0.045578381, 0.047403427, 0.049097823, 0.050682706, 0.052174222, 0.053585014, 0.054925191, 0.056202977,
+  0.057425162, 0.058621519, 0.059817877, 0.061014234, 0.062210592, 0.063406949, 0.064603307, 0.065799665,
+  0.066996022, 0.068192380, 0.069388737, 0.070585095, 0.071781452, 0.072977810, 0.074174167, 0.075370525,
+  0.076566882, 0.077763240, 0.078959597, 0.080155955, 0.081352312, 0.082548670, 0.083745028, 0.084941385,
+  0.086137743, 0.087334100, 0.088530458, 0.089726815, 0.090923173, 0.092119530, 0.093315888, 0.094512245,
+  0.095708603, 0.096904960, 0.098101318, 0.099297676, 0.100494033, 0.101690391, 0.102886748, 0.104083106,
+  0.105279463, 0.106475821, 0.107672178, 0.108868536, 0.110064893, 0.111261251, 0.112457608, 0.113653966,
+  0.114850323, 0.116046681, 0.117243039, 0.118439396, 0.119635754, 0.120832111, 0.122028469, 0.123224826,
+  0.124421184, 0.125617541, 0.126813899, 0.128010256, 0.129206614, 0.130402971, 0.131599329, 0.132795687,
+  0.133992044, 0.135188402, 0.136384759, 0.137581117, 0.138777474, 0.139973832, 0.141170189, 0.142366547,
+  0.143562904, 0.144759262, 0.145955619, 0.147151977, 0.148348335, 0.149544692, 0.150741050, 0.151937407,
+  0.153133765, 0.154330122, 0.155526480, 0.156722837, 0.157919195, 0.159115552, 0.160311910, 0.161508267,
+  0.162704625, 0.163900982, 0.165097340, 0.166293698, 0.167490055, 0.168686413, 0.169882770, 0.171079128,
+  0.172275485, 0.173471843, 0.174668200, 0.175864558, 0.177060915, 0.178257273, 0.179453630, 0.179556455,
+  0.178599475, 0.176690966, 0.174947304, 0.172568952, 0.171134093, 0.169407800, 0.168949120, 0.167189563,
+  0.165619368, 0.164399903, 0.162656621, 0.160951679, 0.161562840, 0.161275635, 0.161076730, 0.158787925,
+  0.156607196, 0.154229915, 0.152775872, 0.152659896, 0.151848070, 0.149955572, 0.148043099, 0.147046002,
+  0.144883627, 0.143221308, 0.141587648, 0.138913317, 0.137294959, 0.137294702, 0.136109903, 0.134223589,
+  0.134442137, 0.134006924, 0.133982859, 0.133414307, 0.131787006, 0.128188987, 0.124630503, 0.120928508,
+  0.117287417, 0.113703556, 0.110173613, 0.106694593, 0.103263780, 0.099790373, 0.096252473, 0.092774054,
+  0.089352406, 0.085985010, 0.082669526, 0.079403770, 0.076254203, 0.073201133, 0.070177462, 0.067182477,
+  0.064215494, 0.061275853, 0.058362921, 0.055476089, 0.052614768, 0.049778393, 0.046966419, 0.044178317,
+  0.041426679, 0.038713496, 0.036018430, 0.033341101, 0.030681142, 0.028038202, 0.025411941, 0.022802031,
+  0.020208157, 0.017631524, 0.015074828, 0.012530953, 0.009990155, 0.007460522, 0.004952605, 0.002465922,
+  0.000000037
+);
 // END TABLES
 
 // The table steps evenly through the HSL* hue and gives the HSV hue,
@@ -221,6 +258,47 @@ float hslStarFromHsvHue(float hsv) {
   return mod((float(lo) + t) * (360.0 / float(HSL_STAR_TABLE_STEPS)), 360.0);
 }
 
+// --- Saturation correction ------------------------------------------------------
+
+// As in hsl-star.js: hues whose most vivid color is more colorful, in OKLab
+// chroma, than the median hue's at that lightness get a strength r > 1,
+// faded in over the first quarter above the median, and saturation becomes
+// the share t = s / (r + (1 - r) s) of the vivid color. Both directions use
+// the same r, so they undo each other exactly.
+const float HSL_STAR_STRENGTH = 0.6;
+const float HSL_STAR_FADE = 0.25;
+
+// OKLab chroma of a linear sRGB color (Ottosson 2020).
+float hslStarOklabChroma(vec3 rgb) {
+  vec3 lms = vec3(
+    dot(rgb, vec3(0.4122214708, 0.5363325363, 0.0514459929)),
+    dot(rgb, vec3(0.2119034982, 0.6806995451, 0.1073969566)),
+    dot(rgb, vec3(0.0883024619, 0.2817188376, 0.6299787005)));
+  lms = pow(max(lms, 0.0), vec3(1.0 / 3.0));
+  vec2 ab = vec2(
+    dot(lms, vec3(1.9779984951, -2.428592205, 0.4505937099)),
+    dot(lms, vec3(0.0259040371, 0.7827717662, -0.808675766)));
+  return length(ab);
+}
+
+// The median hue's OKLab chroma at s = 1 and lightness l, between the
+// table's steps of half an L*.
+float hslStarReferenceChroma(float l) {
+  float x = clamp(l, 0.0, 100.0) * (float(HSL_STAR_CHROMA_STEPS) / 100.0);
+  int i = min(int(x), HSL_STAR_CHROMA_STEPS - 1);
+  return mix(HSL_STAR_REFERENCE_CHROMA[i], HSL_STAR_REFERENCE_CHROMA[i + 1], x - float(i));
+}
+
+// The strength r for the vivid color a * pure + b at lightness l.
+float hslStarStrength(vec3 pure, float a, float b, float l) {
+  float c = hslStarOklabChroma(a * pure + b);
+  float c0 = hslStarReferenceChroma(l);
+  if (!(c > c0) || c <= 1e-6) return 1.0;
+  float q = c / c0;
+  float x = min(1.0, (q - 1.0) / HSL_STAR_FADE);
+  return 1.0 + HSL_STAR_STRENGTH * x * x * (3.0 - 2.0 * x) * (q * sqrt(q) - 1.0);
+}
+
 // --- Forward and inverse ------------------------------------------------------
 
 // Linear-light sRGB, channels in [0, 1].
@@ -228,12 +306,19 @@ vec3 hslStarToLinear(vec3 hls, int hueAxis) {
   float hsv = hueAxis == HSL_STAR_HSV ? mod(hls.x, 360.0) : hslStarToHsvHue(hls.x);
   vec3 pure = hslStarDecode(hslStarPureHue(hsv));
   float yPure = dot(pure, HSL_STAR_WEIGHTS);
-  float y = hslStarYFromLstar(clamp(hls.y, 0.0, 100.0));
+  float l = clamp(hls.y, 0.0, 100.0);
+  float y = hslStarYFromLstar(l);
   float s = clamp(hls.z, 0.0, 1.0);
   // Vivid color = a * pure + b (shade if b = 0, tint otherwise).
   float a = y <= yPure ? y / yPure : (1.0 - y) / (1.0 - yPure);
   float b = y <= yPure ? 0.0 : 1.0 - a;
-  return clamp(s * a * pure + (s * b + (1.0 - s) * y), 0.0, 1.0);
+  // Its share in the mix with grey: s itself at 0 and 1, else corrected.
+  float t = s;
+  if (s > 0.0 && s < 1.0) {
+    float r = hslStarStrength(pure, a, b, l);
+    t = s / (r + (1.0 - r) * s);
+  }
+  return clamp(t * a * pure + (t * b + (1.0 - t) * y), 0.0, 1.0);
 }
 
 vec3 hslStarFromLinear(vec3 rgb, int hueAxis) {
@@ -247,9 +332,18 @@ vec3 hslStarFromLinear(vec3 rgb, int hueAxis) {
   // Mixing with grey and scaling keep the normalised linear channels equal
   // to the pure color's, so normalising recovers it exactly.
   float hsv = hslStarHsvHueOf(hslStarEncode((rgb - bottom) / range));
-  float yPure = dot(hslStarDecode(hslStarPureHue(hsv)), HSL_STAR_WEIGHTS);
-  float vividRange = y <= yPure ? y / yPure : (1.0 - y) / (1.0 - yPure);
-  float s = vividRange > 0.0 ? clamp(range / vividRange, 0.0, 1.0) : 0.0;
+  vec3 pure = hslStarDecode(hslStarPureHue(hsv));
+  float yPure = dot(pure, HSL_STAR_WEIGHTS);
+  // The vivid color's range, a in the forward direction, and its share t.
+  float a = y <= yPure ? y / yPure : (1.0 - y) / (1.0 - yPure);
+  float t = a > 0.0 ? clamp(range / a, 0.0, 1.0) : 0.0;
+  // Undo the saturation correction with the forward direction's strength:
+  // s = r t / (1 - (1 - r) t).
+  float s = t;
+  if (t > 0.0 && t < 1.0) {
+    float r = hslStarStrength(pure, a, y <= yPure ? 0.0 : 1.0 - a, l);
+    s = r * t / (1.0 - (1.0 - r) * t);
+  }
   return vec3(hueAxis == HSL_STAR_HSV ? hsv : hslStarFromHsvHue(hsv), l, s);
 }
 
