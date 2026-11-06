@@ -47,7 +47,7 @@ H has no closed form, so the implementations tabulate it and interpolate linearl
 
 ## The hue shift
 
-On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, shades and lower saturations keep it. Mixing in white or grey would otherwise move the OKLab hue, by up to 12° in the reds and 22° in the blues: light blues would drift towards lavender, light reds towards pink. So before the color is built, its HSV hue x₀ = H⁻¹(h) is shifted to x = D(x₀, L*, s), the HSV hue whose color at this lightness and saturation has the pure color's OKLab hue. Pure colors don't move, so h + 180° is still the opposite hue. On the HSV hue axis, D does nothing.
+On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, shades and lower saturations keep it. Mixing in white or grey would otherwise move the OKLab hue, by up to 12° in the reds and 22° in the blues, so light blues would drift towards lavender and light reds towards pink. So before the color is built, its HSV hue x₀ = H⁻¹(h) is shifted to x = D(x₀, L*, s), the HSV hue whose color at this lightness and saturation has the pure color's OKLab hue. Pure colors don't move, so h + 180° is still the opposite hue. On the HSV hue axis, D does nothing.
 
 1. **Anchors.** Every 5° of HSV hue, at white shares w = 0, 0.1, 0.25, 0.5, 0.75, 0.98 and saturations s = 0.1, 0.25, 0.5, 0.75, 1, the shift is measured directly: the HSV hue at which the anchor's color has its pure color's OKLab hue.
 
@@ -61,7 +61,13 @@ On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, 
 
 4. **Order.** For that step to be unique, the shifted anchors must stay in order. Where the blues would need their tints moved past their neighbours', the table holds the shift back, so that every anchor stays at least 0.25° per degree ahead of the one before.
 
-The tables are generated together with the reference chroma of [the saturation correction](#the-saturation-correction), as each depends on the other. Weighted by chroma, the OKLab hue of tints and lower saturations stays within 0.7° of the pure color's on average, at worst about 9° in the blues; without the shift it's 3.3° and 21.5°.
+The table isn't fitted. `scripts/tables.js` makes it, and `npm run sync` writes it into both implementations:
+
+- **Measuring.** For each anchor, white share and saturation, it builds the color at HSV hues within 60° of the anchor and looks for where its OKLab hue crosses the pure color's, in half-degree steps. The crossing nearest the anchor is then narrowed down by bisection. The pure colors' own cells (w = 0, s = 1) are set to 0.
+- **Ordering.** On a grid of L* and s, wherever two neighbouring shifted anchors come too close, the earlier one is moved down and the later one up, by the smallest change that restores the gap. The pure colors' cells stay. This is repeated until no gap is short any more.
+- **Together with the saturation correction.** The reference chroma of [the saturation correction](#the-saturation-correction) is measured at s = 1, where the shift moves the tints, and the shift below s = 1 is measured with the saturation correction. So the two tables are made in turn until neither changes, which takes two or three rounds.
+
+Weighted by chroma, the OKLab hue of tints and lower saturations stays within 0.7° of the pure color's on average, at worst about 9° in the blues. Without the shift it's 3.3° and 21.5°.
 
 ## The saturation correction
 
@@ -200,12 +206,15 @@ All three give an HSL-like interface with perceptually meaningful lightness and 
 | Hue of tints and shades | Constant in CIELUV | Constant in OKLab | Kept in OKLab within about a degree, more in the blues |
 | Saturation | CIELUV chroma as a share of the most the gamut allows | Chroma, interpolated through fitted values to behave evenly | Linear mix between grey and the most vivid sRGB color, toned down near grey for the most colorful hues |
 | Gamut boundary | Ray intersected with six lines per lightness | Approximated with fitted functions | Built into the construction |
+| Round trip | Exact, up to rounding (about 10⁻¹³) | Close, within about 10⁻⁷ | Exact, up to rounding (about 10⁻¹⁴) |
 
 **HSLuv** ([hsluv.org](https://www.hsluv.org/math/)) has the same lightness as HSL* and both use CIE L*, so both give rows of exactly equal lightness. But HSLuv defines hue, lightness and chroma in the device-independent CIELUV, and only then limits the result to sRGB. Saturation is the chroma as a share of the maximum at that lightness and hue. That keeps the hue constant through tints and shades, but every conversion goes through XYZ and CIELUV.
 
 HSL* skips both and builds colors directly in RGB, where the gamut boundary is simply one channel at 0 or 1. Its saturation is therefore not chroma. A closed-form correction near grey evens out how colorful the hues look, but saturation stays a share of the gamut, not a measure of colorfulness. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
 
 **Okhsl** ([Björn Ottosson](https://bottosson.github.io/posts/colorpicker/)) uses OKLab for lightness, hue and saturation. Its lightness is OKLab's, adjusted to come close to CIE L*, so rows are close to equally light but not exact. It also only approximates the sRGB gamut boundary. Okhsl tries harder than HSL* to make hue and saturation perceptually consistent, and HSL*'s saturation correction is fitted against it.
+
+The two start from opposite ends. Okhsl builds its colors in OKLab, so hue and colorfulness are perceptual from the start, and approximates the sRGB gamut boundary with fitted polynomials and a Newton-type step. HSL* builds them in sRGB, so the gamut boundary and exact L* come for free, and adds each perceptual property as a correction with its own table, for the OKLab hue axis, the hue shift and the saturation correction. HSL* also undoes itself exactly. What's left of a round trip, about 10⁻¹⁴, is the rounding of 64-bit floating point. So does HSLuv, to about 10⁻¹³. Okhsl's round trip is off by up to 2.6·10⁻⁷ per channel, inherited from OKLab, whose two published matrices aren't exact inverses of each other (measured with ports of the reference implementations, in linear sRGB). That's far below an 8-bit step, but not exact.
 
 # References
 
