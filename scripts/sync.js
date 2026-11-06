@@ -1,15 +1,17 @@
 // Keeps the generated parts of the library files in step with their sources:
 // the version from package.json in the first line of hsl-star.js and
 // hsl-star.glsl, the OKLab hue table in hsl-star.glsl from hsl-star.js, so
-// the shader can't drift from the library, and the saturation correction's
-// reference chroma in both, computed from the library itself. Run it after
-// changing the version, the hue axis or the construction:
+// the shader can't drift from the library, and the tables of the two
+// corrections, the reference chroma (in both) and the hue shift (in
+// hsl-star.js), made by tables.js. Run it after changing the version, the
+// hue axis or the construction:
 //
 //   npm run sync
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { oklabChroma, toHsvHue, toLinear } from '../js/hsl-star.js';
+import { toHsvHue } from '../js/hsl-star.js';
+import { CHROMA_STEPS, SHIFT_SS, SHIFT_STEP, SHIFT_WS, generateTables } from './tables.js';
 
 const path = (relative) => fileURLToPath(new URL(relative, import.meta.url));
 const { version: VERSION } = JSON.parse(readFileSync(path('../package.json'), 'utf8'));
@@ -60,34 +62,62 @@ function tables() {
     `const float HSL_STAR_REFERENCE_CHROMA[${CHROMA_STEPS + 1}] = float[](`,
     chromaLines().join(',\n'),
     ');',
+    '',
+    `const int HSL_STAR_SHIFT_ANCHORS = ${360 / SHIFT_STEP};`,
+    `const float HSL_STAR_SHIFT_STEP = ${SHIFT_STEP.toFixed(1)};`,
+    `const float HSL_STAR_SHIFT_WS[${SHIFT_WS.length}] = float[](${SHIFT_WS.map((v) => v.toFixed(2)).join(', ')});`,
+    `const float HSL_STAR_SHIFT_SS[${SHIFT_SS.length}] = float[](${SHIFT_SS.map((v) => v.toFixed(2)).join(', ')});`,
+    '',
+    "// The luminance each anchor's white share counts from.",
+    `const float HSL_STAR_SHIFT_YREF[${360 / SHIFT_STEP}] = float[](`,
+    yrefLines().join(',\n'),
+    ');',
+    '',
+    `// Hue shift in HSV degrees at anchor hues every ${SHIFT_STEP}°, white shares`,
+    `// ${SHIFT_WS.join(', ')} and saturations ${SHIFT_SS.join(', ')}.`,
+    `const float HSL_STAR_HUE_SHIFT[${generateTables().hueShift.length}] = float[](`,
+    shiftLines()
+      .map((line) => line.replace(/, (\/\/.*)$/, ' $1'))
+      .map((line, i, lines) => (i < lines.length - 1 ? line.replace(/ \/\//, ', //') : line))
+      .join('\n'),
+    ');',
     END,
   ].join('\n');
 }
 
-// --- Reference chroma -------------------------------------------------------
-
-// At every half L*, the median over 72 hues 5° apart on the OKLab axis of the
-// OKLab chroma of each hue's most vivid color. Always on that axis, whatever
-// axis the caller uses, so the same coordinates give the same color on both.
-// With 72 values the median is the mean of the 36th and 37th. s = 1 is never
-// corrected, so the table doesn't depend on itself.
-export const CHROMA_STEPS = 200;
-
-export function referenceChroma() {
-  return Array.from({ length: CHROMA_STEPS + 1 }, (_, i) => {
-    const l = (i * 100) / CHROMA_STEPS;
-    const chroma = [];
-    for (let h = 0; h < 360; h += 5) chroma.push(oklabChroma(toLinear({ h, l, s: 1 }, { hue: 'oklab' })));
-    chroma.sort((a, b) => a - b);
-    return (chroma[35] + chroma[36]) / 2;
-  });
+// The anchors' reference luminance, eight to a line.
+function yrefLines() {
+  const values = generateTables().anchorYref;
+  const lines = [];
+  for (let i = 0; i < values.length; i += 8) lines.push('  ' + values.slice(i, i + 8).map((v) => v.toFixed(9)).join(', '));
+  return lines;
 }
 
-// The table eight values to a line, the same in both files.
+// --- The corrections' tables -----------------------------------------------
+
+// The reference chroma, as tables.js makes it with the hue shift.
+export { CHROMA_STEPS };
+export const referenceChroma = () => generateTables().referenceChroma;
+
+// The reference chroma eight values to a line, the same in both files.
 function chromaLines() {
   const values = referenceChroma();
   const lines = [];
   for (let i = 0; i < values.length; i += 8) lines.push('  ' + values.slice(i, i + 8).map((v) => v.toFixed(9)).join(', '));
+  return lines;
+}
+
+// The hue shift, one line per anchor hue and white share, a value per
+// saturation.
+function shiftLines() {
+  const { hueShift } = generateTables();
+  const n = SHIFT_SS.length;
+  const lines = [];
+  for (let i = 0; i < hueShift.length; i += n) {
+    const [k, j] = [Math.floor(i / (n * SHIFT_WS.length)), (i / n) % SHIFT_WS.length];
+    const values = hueShift.slice(i, i + n).map((v) => v.toFixed(4).padStart(8)).join(', ');
+    lines.push(`  ${values}, // ${k * SHIFT_STEP}° w ${SHIFT_WS[j]}`);
+  }
   return lines;
 }
 
@@ -97,6 +127,12 @@ function jsTables() {
     `// OKLab chroma of the median hue's most vivid color at L* 0, 0.5, …, 100.`,
     'const REFERENCE_CHROMA = [',
     ...chromaLines().map((line) => line + ','),
+    '];',
+    '',
+    `// Hue shift in HSV degrees at anchor hues every ${SHIFT_STEP}°, white shares`,
+    `// ${SHIFT_WS.join(', ')} and saturations ${SHIFT_SS.join(', ')}.`,
+    'const HUE_SHIFT = [',
+    ...shiftLines(),
     '];',
     END,
   ].join('\n');

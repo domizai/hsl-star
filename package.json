@@ -9,6 +9,7 @@
   "types": "js/hsl-star.d.ts",
   "scripts": {
     "test": "node --test 'js/test/*.test.js' 'scripts/*.test.js'",
-    "sync": "node scripts/sync.js"
+    "sync": "node scripts/sync.js",
+    "bench": "node scripts/bench.js"
   }
 }

@@ -19,7 +19,11 @@ export interface HslStar {
   s: number;
 }
 
-/** `'oklab'`: the HSV hues re-spaced to roughly even perceived steps. `'hsv'`: the hue of HSV and HSL. */
+/**
+ * `'oklab'`: the HSV hues re-spaced to roughly even perceived steps, and
+ * kept in OKLab by tints, shades and lower saturations. `'hsv'`: the hue of
+ * HSV and HSL, for every color.
+ */
 export type HueMode = 'hsv' | 'oklab';
 
 export interface HueOptions {
@@ -33,6 +37,12 @@ export interface HueBasis {
   pure: Rgb;
   /** Its luminance. */
   y: number;
+  /**
+   * On the OKLab axis, the HSV hue of the pure color: basisToLinear shifts
+   * it per lightness and saturation, so tints and shades keep its OKLab hue.
+   * Absent on the HSV axis.
+   */
+  x?: number;
 }
 
 

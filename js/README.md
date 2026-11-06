@@ -9,10 +9,10 @@ import hslStar from './hsl-star.js';
 
 let col = hslStar({ h: 18, s: 0.9, l: 62 });
 col.value;  // { h: 18, s: 0.9, l: 62 }
-col.hex;    // '#ee7232'
-col.rgb;    // { r: 238, g: 114, b: 50 }
-col.srgb;   // { r: 0.933, g: 0.446, b: 0.195 }
-col.linear; // { r: 0.855, g: 0.168, b: 0.032 }
+col.hex;    // '#ea7531'
+col.rgb;    // { r: 234, g: 117, b: 49 }
+col.srgb;   // { r: 0.917, g: 0.459, b: 0.193 }
+col.linear; // { r: 0.821, g: 0.178, b: 0.031 }
 
 // change lightness
 col = col.with({ l: 30 });
@@ -102,11 +102,12 @@ toLinear(coords: HslStar, options?: HueOptions): Rgb
 fromLinear(linear: Rgb, options?: HueOptions): HslStar
 
 // Everything that depends on hue alone, the pure color in linear light and
-// its luminance. Compute it once per hue, for example per column of a plane.
-hueBasis(h: number, options?: HueOptions): { pure: Rgb; y: number }
+// its luminance, and on the OKLab axis its HSV hue x for the hue shift.
+// Compute it once per hue, for example per column of a plane.
+hueBasis(h: number, options?: HueOptions): { pure: Rgb; y: number; x?: number }
 
 // Linear-light sRGB for a basis from hueBasis. Call it per pixel.
-basisToLinear(basis: { pure: Rgb; y: number }, l: number, s: number): Rgb
+basisToLinear(basis: { pure: Rgb; y: number; x?: number }, l: number, s: number): Rgb
 ```
 
 **Hue**

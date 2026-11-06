@@ -1,7 +1,9 @@
-// The saturation correction (see "Saturation correction" in hsl-star.js):
-// the reference values from the implementation brief in
-// experiments/perceptual-hue-consistency/BRIEF-saturation-correction.md,
-// computed with its reference prototype on the OKLab hue axis.
+// The saturation correction (see "Saturation correction" in hsl-star.js).
+// The reference values started as those of the implementation brief in
+// experiments/perceptual-hue-consistency/BRIEF-saturation-correction.md;
+// since the hue shift (hue-shift.test.js) they are its own: the shift moves
+// tints on the OKLab axis, and with them the reference chroma above L* 55.
+// Below that it's unchanged, as the shades of pure colors don't move.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,22 +15,22 @@ const close = (a, b, tol, msg) =>
 
 test('reference chroma at some lightnesses', () => {
   const chroma = referenceChroma();
-  const expected = { 10: 0.062211, 25: 0.098101, 40: 0.133992, 50: 0.157919, 60: 0.178599, 75: 0.13611, 90: 0.052615 };
+  const expected = { 10: 0.062211, 25: 0.098101, 40: 0.133992, 50: 0.157919, 60: 0.177863, 75: 0.136866, 90: 0.058028 };
   for (const [l, c] of Object.entries(expected)) close(chroma[l * 2], c, 1e-6, `L* ${l}`);
 });
 
 test('reference colors', () => {
   const cases = [
-    [264, 40, 0.2, '#615a7b'],
-    [264, 40, 0.5, '#674fa6'],
-    [300, 60, 0.3, '#ac83ad'],
-    [30, 60, 0.3, '#aa8a7b'],
-    [110, 85, 0.25, '#cdd7cd'],
-    [190, 50, 0.4, '#5d7c88'],
-    [0, 50, 0.2, '#906f6f'],
+    [264, 40, 0.2, '#5f5a7c'],
+    [264, 40, 0.5, '#6351a7'],
+    [300, 60, 0.3, '#ad83ab'],
+    [30, 60, 0.3, '#a38c7b'],
+    [110, 85, 0.25, '#cdd7cc'],
+    [190, 50, 0.4, '#5d7c85'],
+    [0, 50, 0.2, '#8d706c'],
     [264, 40, 1, '#7704ff'],
     [264, 40, 0, '#5e5e5e'],
-    [60, 30, 0.5, '#504531'],
+    [60, 30, 0.5, '#4d4631'],
   ];
   for (const [h, l, s, hex] of cases) {
     assert.equal(hslStar.toHex(hslStar.toSrgb({ h, l, s })), hex, `h=${h} l=${l} s=${s}`);
@@ -70,13 +72,15 @@ test('saturation rises strictly with s', () => {
   }
 });
 
+// On the HSV axis, where the hue isn't shifted, so the hue stays the same
+// and only the saturation correction acts.
 test('no color gets more colorful than before', () => {
   for (let l = 2.5; l < 100; l += 2.5) {
     for (let h = 0; h < 360; h += 2.5) {
       for (let i = 1; i < 100; i++) {
         const coords = { h, l, s: i / 100 };
-        const now = hslStar.oklabChroma(hslStar.toLinear(coords));
-        const before = hslStar.oklabChroma(uncorrected(coords));
+        const now = hslStar.oklabChroma(hslStar.toLinear(coords, { hue: 'hsv' }));
+        const before = hslStar.oklabChroma(uncorrected(coords, { hue: 'hsv' }));
         assert.ok(now <= before + 1e-12, `h=${h} l=${l} s=${coords.s}: ${now} > ${before}`);
       }
     }
@@ -136,15 +140,18 @@ test('no steps between neighbouring hues', () => {
   assert.ok(now <= before + 0.0005, `largest step ${now}, before ${before}`);
 });
 
-test('both hue axes give the same color for the same hue', () => {
-  for (let l = 5; l < 100; l += 5) {
-    for (let x = 0; x < 360; x += 2.5) {
-      const h = hslStar.fromHsvHue(x);
-      for (const s of [0.1, 0.3, 0.6, 0.9]) {
-        const hsv = hslStar.toLinear({ h: x, l, s }, { hue: 'hsv' });
-        const oklab = hslStar.toLinear({ h, l, s }, { hue: 'oklab' });
-        hsv.forEach((v, i) => close(v, oklab[i], 1e-9, `x=${x} l=${l} s=${s}`));
-      }
+// The saturation correction is the same on both axes: on the OKLab axis
+// the hue shift moves tints and lower saturations to another HSV hue, but
+// the shades of a pure color at s = 1 aren't shifted, and there the two
+// axes agree.
+test('both hue axes give the same shades for the same hue', () => {
+  for (let x = 0; x < 360; x += 2.5) {
+    const h = hslStar.fromHsvHue(x);
+    const top = hslStar.lstarFromY(hslStar.luminance(hslStar.pureHue(x).map(hslStar.decode)));
+    for (let l = 2; l <= top; l += 2) {
+      const hsv = hslStar.toLinear({ h: x, l, s: 1 }, { hue: 'hsv' });
+      const oklab = hslStar.toLinear({ h, l, s: 1 }, { hue: 'oklab' });
+      hsv.forEach((v, i) => close(v, oklab[i], 1e-9, `x=${x} l=${l}`));
     }
   }
 });

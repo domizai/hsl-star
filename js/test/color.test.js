@@ -8,10 +8,10 @@ test('from HSL*: every form matches the functions', () => {
   assert.deepEqual(c.value, coords);
   const [r, g, b] = toSrgb(coords);
   assert.deepEqual(c.srgb, { r, g, b });
-  assert.equal(c.hex, '#ee7232');
-  assert.deepEqual(c.rgb, { r: 238, g: 114, b: 50 });
-  assert.equal(c.rgb.g, 114);
-  assert.equal(String(c), '#ee7232');
+  assert.equal(c.hex, '#ea7531');
+  assert.deepEqual(c.rgb, { r: 234, g: 117, b: 49 });
+  assert.equal(c.rgb.g, 117);
+  assert.equal(String(c), '#ea7531');
 });
 
 test('every input goes to its constructor', () => {
@@ -69,7 +69,7 @@ test('with() makes a new color and leaves the old one', () => {
   c.value.l = 0;
   c.srgb.r = 0;
   assert.equal(c.value.l, 62);
-  assert.equal(c.hex, '#ee7232');
+  assert.equal(c.hex, '#ea7531');
 });
 
 test('out-of-range input is wrapped or clamped, bad input throws', () => {

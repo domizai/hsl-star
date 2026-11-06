@@ -1,7 +1,7 @@
 // Times the library's conversions in both directions, in nanoseconds per
 // call, for comparing changes to the model:
 //
-//   node scripts/bench.js
+//   npm run bench
 //
 // Each conversion runs over the same 10,000 random colors, first to warm up,
 // then in several rounds; the median round counts. The results go into a
