@@ -69,6 +69,8 @@ The table isn't fitted. `scripts/tables.js` makes it, and `npm run sync` writes 
 
 Weighted by chroma, the OKLab hue of tints and lower saturations stays within 0.7° of the pure color's on average, at worst about 9° in the blues. Without the shift it's 3.3° and 21.5°.
 
+That is consistency with OKLab, not perceived hue as such. Checked against hue-matching experiments (Hung & Berns 1995, Ebner & Fairchild 1998), the shift brings lower saturations and the blues about a quarter closer to the hue observers saw, about as close as OKLab itself, and in the blues closer. For tints at full saturation it changes little on average, a little better for blue and yellow, a little worse for cyan and magenta, where OKLab itself is further from perception than the HSV hue (`experiments/perceptual-hue-consistency/evaluate_shift.py`).
+
 ## The saturation correction
 
 The most vivid colors differ a lot in colorfulness between hues. At L* 40, the most vivid blue has several times the OKLab chroma of the most vivid yellow, so at equal low saturation the blue would look far more saturated. HSL* tones down the hues that stand out, near grey, and leaves the others as they are.
