@@ -1,5 +1,5 @@
 // HSL* 0.3.0
-// A simple color space built on sRGB with perceptual lightness and perceptually spaced hue.
+// A simple color space built on sRGB, with perceptual lightness, hue and saturation.
 // https://github.com/domizai/hsl-star
 // License: MIT
 //

@@ -1,5 +1,5 @@
 // HSL* 0.3.0
-// A simple color space built on sRGB with perceptual lightness and perceptually spaced hue.
+// A simple color space built on sRGB, with perceptual lightness, hue and saturation.
 // https://github.com/domizai/hsl-star
 // License: MIT
 //
@@ -682,25 +682,13 @@ function referenceChroma(l) {
 // The strength r for a hue at lightness l, from its pure color and the
 // vivid color's a and b in basisToLinear: vivid = a * pure + b.
 function strength([p0, p1, p2], a, b, l) {
-  return strengthOf(chromaOf(a * p0 + b, a * p1 + b, a * p2 + b), l);
-}
-
-// The strength r for a vivid color of OKLab chroma c at lightness l.
-function strengthOf(c, l) {
+  const c = chromaOf(a * p0 + b, a * p1 + b, a * p2 + b);
   const c0 = referenceChroma(l);
   if (!(c > c0) || c <= 1e-6) return 1;
   const q = c / c0;
   const x = Math.min(1, (q - 1) / FADE);
   const fade = x * x * (3 - 2 * x);
   return 1 + STRENGTH * fade * (q * Math.sqrt(q) - 1);
-}
-
-// The saturation correction's measure on its own, for showing it: the
-// OKLab chroma of a most vivid color (linear sRGB) at lightness l, the
-// reference chroma there, and the strength it gives.
-export function saturationStrength(vivid, l) {
-  const chroma = chromaOf(...vivid);
-  return { chroma, reference: referenceChroma(l), strength: strengthOf(chroma, l) };
 }
 
 // --- Hue shift ---------------------------------------------------------------
@@ -792,21 +780,6 @@ function unshiftHue(x, y, s) {
     g1 = anchorAt(k + 1, y, sx);
   }
   return wrapHue((k + (x - g0) / (g1 - g0)) * SHIFT_STEP);
-}
-
-// The OKLab axis's hue shift on its own, for showing it: the HSV hue x0
-// of an HSL* hue (toHsvHue) to the HSV hue x the color at lightness l and
-// saturation s is built from. Grey, s = 0, isn't shifted.
-export function shiftHsvHue(x0, l, s) {
-  const sc = clamp(s, 0, 1);
-  return sc > 0 ? shiftHue(wrapHue(x0), yFromLstar(clamp(l, 0, 100)), sc) : wrapHue(x0);
-}
-
-// Its inverse: the HSV hue x0 that shiftHsvHue takes to x at lightness l
-// and saturation s, exactly.
-export function unshiftHsvHue(x, l, s) {
-  const sc = clamp(s, 0, 1);
-  return sc > 0 ? unshiftHue(wrapHue(x), yFromLstar(clamp(l, 0, 100)), sc) : wrapHue(x);
 }
 
 // --- Forward and inverse ----------------------------------------------------

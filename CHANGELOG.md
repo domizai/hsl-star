@@ -10,7 +10,7 @@ Coordinates saved with 0.2.x, such as links to the site, give a different color 
 
 - The JavaScript module and the GLSL shader share generated tables for both corrections, kept current by `npm run sync` (scripts/tables.js makes them).
 - `hueBasis()` on the OKLab axis also returns the HSV hue `x`, which `basisToLinear()` shifts per lightness and saturation.
-- New: `oklabChroma()` in the JavaScript module and `hslStarOklabChroma()` in the shader, and `shiftHsvHue()`, `unshiftHsvHue()` and `saturationStrength()` in the JavaScript module, the hue shift and the saturation correction's measure on their own.
+- New: `oklabChroma()` in the JavaScript module and `hslStarOklabChroma()` in the shader.
 - Converting a hue on the OKLab axis to HSV is faster, with identical results.
 
 ## 0.2.1

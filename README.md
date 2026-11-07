@@ -1,6 +1,6 @@
 # HSL*
 
-A simple color space built on sRGB with perceptual lightness and perceptually spaced hue. Every combination of hue, saturation and L* is a valid sRGB color, nothing gets clipped or falls out of gamut.
+A simple color space built on sRGB, with perceptual lightness, hue and saturation. Every combination of hue, saturation and L* is a valid sRGB color, nothing gets clipped or falls out of gamut.
 
 Try it [here](https://domizai.github.io/hsl-star/), with a color picker, palettes and a contrast checker.
 
