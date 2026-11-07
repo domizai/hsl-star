@@ -2,6 +2,18 @@
 
 Classic HSL is what most tools offer, and HSL* keeps its interface. [HSLuv](https://www.hsluv.org/) builds hue and saturation in CIELUV, [Okhsl](https://bottosson.github.io/posts/colorpicker/) in OKLab, and HSL*'s saturation correction is fitted against Okhsl. How HSL* works is in the [README](README.md).
 
+- [Approaches](#approaches)
+- [How they are compared](#how-they-are-compared)
+- [Rows from black to white](#rows-from-black-to-white)
+- [Lightness](#lightness)
+- [Contrast](#contrast)
+- [Hue spacing](#hue-spacing)
+- [Color differences](#color-differences)
+- [The hue of tints and shades](#the-hue-of-tints-and-shades)
+- [Limits](#limits)
+- [Round trip and speed](#round-trip-and-speed)
+- [References](#references)
+
 ## Approaches
 
 HSLuv, Okhsl and HSL* give an HSL-like interface with perceptually meaningful lightness and saturation limited to the sRGB gamut. They differ in where hue and saturation come from, and how much work the gamut boundary takes.
@@ -85,6 +97,19 @@ How much the steps vary (standard deviation over mean), with the smallest and la
 | s 0.5, lightness 0.7 | 38 % (1.9–7.4) | 25 % (2.5–5.9) | 8 % (3.2–4.3) | 13 % (2.1–4.3) |
 
 At full saturation HSL\* is about as even as Okhsl, and both are far more even than HSL, whose steps between yellow and green and around blue nearly vanish. HSLuv lies in between. CIELUV crowds the reds and the blues into few degrees of hue, so its steps there are large. At full saturation the gamut sets the limits for all of them. At lower saturation Okhsl is clearly the most even. Its saturation is a share of chroma, so all hues at s 0.5 are about equally colorful, and only the hue changes from bar to bar. HSL\*'s saturation is a share of the gamut, toned down near grey for the most colorful hues, so neighbouring hues can still differ in colorfulness, and that adds to the steps.
+
+## Color differences
+
+![Discs of HSL, HSLuv, Okhsl and HSL* at lightness 0.5 with CIEDE2000 ellipses](assets/comparison-delta-e.svg)
+
+Each space at lightness 0.5 as a disc, with hue round on its own axis (0° at the right, counterclockwise) and saturation out from grey in the middle, the rings at 0.25, 0.5, 0.75 and 1. Around 37 points, each ellipse joins the colors one CIEDE2000 away, drawn twice as large. 
+
+| | HSL | HSLuv | Okhsl | HSL* |
+|---|---:|---:|---:|---:|
+| Smallest to largest ellipse (mean radius) | ×7.9 | ×3.3 | ×4.4 | ×2.6 |
+| Longest over shortest axis, median | 2.6 | 1.9 | 1.9 | 1.8 |
+
+HSL's ellipses differ the most in size and are the longest. HSLuv, Okhsl and HSL\* are far more even. HSL\*'s ellipses vary the least in size, while Okhsl's grow long in the blues, where a step in saturation shows little. None of them is truly uniform. HSL\*'s ellipses get small corners in places, most of all near grey and in the greens. Its tables for the hue axis and the hue shift are interpolated linearly, so how fast the color changes jumps slightly from one table entry to the next.
 
 ## The hue of tints and shades
 

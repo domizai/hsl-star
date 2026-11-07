@@ -387,6 +387,121 @@ function strip(x, y, width, height, colorAt, stops = 96) {
   write('comparison-hue-steps.svg', svg(LABEL + 2 * CHART + GAP + 20, TITLE + SPACES.length * BAND - 20, [`<g ${FONT}>`, body, '</g>']));
 }
 
+// 2c. ΔE discs: each space at lightness 0.5 as a disc, hue round on its own
+// axis and saturation out from grey in the middle, with ellipses round 37
+// points: in every direction, the colors one CIEDE2000 away, drawn twice as
+// large, as on the site. Even, round ellipses of one size mean equal steps
+// look equal everywhere. In each direction a short probe guesses the
+// distance, then bisection closes in on ΔE = 1; directions that leave the
+// disc first are measured the other way, as the curve is close to
+// symmetric.
+const DISC_L = 0.5;
+const MAGNIFY = 2;
+const discLab = (space, [u, v]) => {
+  const s = Math.min(1, Math.hypot(u, v));
+  const h = s > 0 ? ((Math.atan2(v, u) * 180) / Math.PI + 360) % 360 : 0;
+  return lab(space.toLinear(h, s, DISC_L));
+};
+const discCentres = [[0, 0]];
+for (const r of [0.25, 0.5, 0.75]) for (let k = 0; k < 12; k++) discCentres.push([r * Math.cos((k * Math.PI) / 6), r * Math.sin((k * Math.PI) / 6)]);
+function discEllipse(space, centre, steps = 72) {
+  const middle = discLab(space, centre);
+  return Array.from({ length: steps }, (_, k) => {
+    const angle = (2 * Math.PI * k) / steps;
+    const [du, dv] = [Math.cos(angle), Math.sin(angle)];
+    const edge = (side) => {
+      const b = side * (centre[0] * du + centre[1] * dv);
+      return -b + Math.sqrt(b * b + 1 - (centre[0] ** 2 + centre[1] ** 2));
+    };
+    const reachOf = (side) => {
+      const at = (r) => deltaE2000(middle, discLab(space, [centre[0] + side * r * du, centre[1] + side * r * dv]));
+      let lo = 0;
+      let hi = Math.min(1e-3 / Math.max(at(1e-3), 1e-9), edge(side));
+      while (at(hi) < 1) {
+        if (hi >= edge(side)) return null;
+        lo = hi;
+        hi = Math.min(hi * 2, edge(side));
+      }
+      for (let i = 0; i < 40; i++) {
+        const mid = (lo + hi) / 2;
+        if (at(mid) < 1) lo = mid;
+        else hi = mid;
+      }
+      return (lo + hi) / 2;
+    };
+    const reach = reachOf(1) ?? reachOf(-1) ?? 0;
+    return [centre[0] + reach * du, centre[1] + reach * dv];
+  });
+}
+const discEllipses = new Map(SPACES.map((space) => [space, discCentres.map((centre) => ({ centre, points: discEllipse(space, centre) }))]));
+
+// How even they are: the size of each ellipse (its mean radius), smallest
+// to largest, and how long the longest is (longest over shortest radius).
+section(
+  `ΔE ellipses at lightness ${DISC_L} (37 ellipses; size = mean radius in the disc, saturation 1 = 1)`,
+  table(
+    ['', ...SPACES.map((s) => s.name)],
+    [
+      ['Smallest–largest', ...SPACES.map((space) => {
+        const sizes = discEllipses.get(space).map(({ centre, points }) => points.reduce((a, [u, v]) => a + Math.hypot(u - centre[0], v - centre[1]), 0) / points.length);
+        return `${Math.min(...sizes).toFixed(3)}–${Math.max(...sizes).toFixed(3)} (×${(Math.max(...sizes) / Math.min(...sizes)).toFixed(1)})`;
+      })],
+      ['Longest over shortest axis, median', ...SPACES.map((space) => {
+        const ratios = discEllipses.get(space).map(({ centre, points }) => {
+          const r = points.map(([u, v]) => Math.hypot(u - centre[0], v - centre[1]));
+          return Math.max(...r) / Math.min(...r);
+        });
+        return median(ratios).toFixed(1);
+      })],
+    ],
+  ),
+);
+
+{
+  const SIZE = 440;
+  const R = 200;
+  const GAP = 24;
+  const TITLE = 24;
+  const COLUMNS = 2;
+  const cell = (k) => [(k % COLUMNS) * (SIZE + GAP), Math.floor(k / COLUMNS) * (TITLE + SIZE + GAP)];
+  const body = SPACES.map((space, k) => {
+    const [left, top] = cell(k);
+    const cx = left + SIZE / 2;
+    const cy = top + TITLE + SIZE / 2;
+    const at = ([u, v]) => [cx + u * R, cy - v * R];
+    const D = 2 * R;
+    const pixels = new Uint8Array(D * D * 4);
+    for (let y = 0; y < D; y++) {
+      for (let x = 0; x < D; x++) {
+        const u = (x + 0.5 - R) / R;
+        const v = (R - y - 0.5) / R;
+        const s = Math.hypot(u, v);
+        if (s > 1) continue;
+        const h = ((Math.atan2(v, u) * 180) / Math.PI + 360) % 360;
+        pixels.set([...hslStar.to8bit(space.toLinear(h, s, DISC_L).map(hslStar.encode)), 255], (y * D + x) * 4);
+      }
+    }
+    const grid = [
+      [0.25, 0.5, 0.75, 1].map((r) => `<circle cx="${cx}" cy="${cy}" r="${r * R}"/>`),
+      Array.from({ length: 12 }, (_, i) => {
+        const [x, y] = at([Math.cos((i * Math.PI) / 6), Math.sin((i * Math.PI) / 6)]);
+        return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
+      }),
+    ];
+    const ellipses = discEllipses.get(space).map(({ centre, points }) =>
+      `<polygon points="${points.map(([u, v]) => at([centre[0] + (u - centre[0]) * MAGNIFY, centre[1] + (v - centre[1]) * MAGNIFY]).map((n) => n.toFixed(1)).join(',')).join(' ')}"/>`,
+    );
+    return [
+      text(left, top + 10, escape(space.name)),
+      `<image x="${cx - R}" y="${cy - R}" width="${D}" height="${D}" href="data:image/png;base64,${png(D, D, pixels).toString('base64')}"/>`,
+      `<g fill="none" stroke="#000" stroke-opacity="0.18">`, grid, '</g>',
+      `<g fill="none" stroke="#fff" stroke-width="1.25">`, ellipses, '</g>',
+    ];
+  });
+  const rows = Math.ceil(SPACES.length / COLUMNS);
+  write('comparison-delta-e.svg', svg(COLUMNS * SIZE + (COLUMNS - 1) * GAP, rows * (TITLE + SIZE + GAP) - GAP, [`<g ${FONT}>`, body, '</g>']));
+}
+
 // 3. Contrast: 12 hues at lightness 0.5 and full saturation, each with its
 // contrast against white, written in white.
 {
