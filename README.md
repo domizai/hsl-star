@@ -4,6 +4,18 @@ A simple color space built on sRGB, with perceptual lightness, hue and saturatio
 
 Try it [here](https://domizai.github.io/hsl-star/), with a color picker, palettes and a contrast checker.
 
+- [Motivation](#motivation)
+- [Implementations](#implementations)
+- [The HSL* color space](#the-hsl-color-space)
+  - [The hue axis](#the-hue-axis)
+  - [The hue shift](#the-hue-shift)
+  - [The saturation correction](#the-saturation-correction)
+  - [HSL* to sRGB](#hsl-to-srgb)
+  - [sRGB to HSL*](#srgb-to-hsl)
+- [Limitations](#limitations)
+- [Comparison](#comparison)
+- [References](#references)
+
 # Motivation
 
 In an HSL picker, hues at the same height don't look equally light, and hue steps are also not perceptually uniform. The HSL* color space improves upon HSL by addressing perceptual inconsistencies in lightness, hue and saturation. It offers:
@@ -24,7 +36,7 @@ HSL in the top row, HSL* in the bottom row, each at full saturation and converte
 
 Currently there is only a [JavaScript](js/README.md) and a [GLSL](glsl/README.md) implementation.
 
-# The HSL* color space 
+# The HSL* color space
 
 HSL* replaces the lightness of HSL with CIE L*, defines saturation relative to the sRGB gamut at a given hue and lightness, evened out near grey, and spaces its hue by OKLab. 
 
