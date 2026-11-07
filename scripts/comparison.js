@@ -1,5 +1,5 @@
-// Measures and draws the comparisons in COMPARISON.md: HSL, Okhsl and HSL*
-// side by side.
+// Measures and draws the comparisons in COMPARISON.md: HSL, HSLuv, Okhsl
+// and HSL* side by side.
 //
 //   npm run compare
 //
@@ -8,8 +8,9 @@
 // planes), so they show up on GitHub in both light and dark mode.
 //
 // Each space is given by its own coordinates: a hue in degrees, a
-// saturation and a lightness from 0 to 1. HSL's hue is the HSV hue, Okhsl's
-// the OKLab hue, HSL*'s its own OKLab-spaced axis, the default. Where the
+// saturation and a lightness from 0 to 1. HSL's hue is the HSV hue, HSLuv's
+// the CIELUV hue, Okhsl's the OKLab hue, HSL*'s its own OKLab-spaced axis,
+// the default. Where the
 // spaces are compared at "the same hue", it's the hue of the same pure
 // color, so the rows start from the same red, yellow and so on.
 
@@ -18,6 +19,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as hslStar from '../js/hsl-star.js';
 import { okhslToLinear, linearToOkhsl } from './okhsl.js';
+import { hsluvToLinear, linearToHsluv } from './hsluv.js';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
@@ -37,6 +39,11 @@ const SPACES = [
     name: 'HSL',
     toLinear: (h, s, l) => hslToSrgb(h, s, l).map(hslStar.decode),
     hueOf: (h) => hslStar.toHsvHue(h),
+  },
+  {
+    name: 'HSLuv',
+    toLinear: (h, s, l) => hsluvToLinear({ h, s: s * 100, l: l * 100 }).map(clamp01),
+    hueOf: (h) => linearToHsluv(hslStar.pureHue(hslStar.toHsvHue(h)).map(hslStar.decode)).h,
   },
   {
     name: 'Okhsl',
@@ -233,6 +240,14 @@ function srgbToHsl([r, g, b]) {
 const CONVERSIONS = [
   { name: 'HSL', to: (c) => hslToSrgb(...c), from: srgbToHsl },
   {
+    name: 'HSLuv',
+    to: ([h, s, l]) => hsluvToLinear({ h, s, l }).map(hslStar.encode),
+    from: (rgb) => {
+      const { h, s, l } = linearToHsluv(rgb.map(hslStar.decode));
+      return [h, s, l];
+    },
+  },
+  {
     name: 'Okhsl',
     to: ([h, s, l]) => okhslToLinear(h, s, l).map(hslStar.encode),
     from: (rgb) => {
@@ -315,10 +330,10 @@ function strip(x, y, width, height, colorAt, stops = 96) {
 }
 
 // 1. Rows from black to white: per hue, the three spaces below each other,
-// each from its lightness 0 to 1 at full saturation, in a grid of 2 × 3.
+// each from its lightness 0 to 1 at full saturation, in a grid of 3 × 2.
 {
-  const COLUMNS = 3;
-  const CELL = 312;
+  const COLUMNS = 2;
+  const CELL = 474;
   const GAP = 12;
   const LABEL = 48;
   const ROW = 22;
@@ -418,28 +433,35 @@ function strip(x, y, width, height, colorAt, stops = 96) {
 
 // 5. Lightness: the hue–lightness plane of each space at full saturation,
 // hue across on its own axis, white at the top and black at the bottom, and
-// beside it the same plane in grey, the luminance of each color. A PNG
-// without text, as the README's figure.
+// beside it the same plane in grey, the luminance of each color. Each row a
+// PNG inside the SVG, with the space's name above it.
 {
   const W = 480;
   const H = 160;
   const GAP = 12;
+  const CAPTION = 24;
+  const SPACE = 12;
   const width = 2 * W + GAP;
-  const height = SPACES.length * (H + GAP) - GAP;
-  const pixels = new Uint8Array(width * height * 4); // transparent gaps
-  SPACES.forEach((space, k) => {
+  const ROW = CAPTION + H + SPACE;
+  const body = SPACES.map((space, k) => {
+    const pixels = new Uint8Array(width * H * 4); // transparent gap
     for (let y = 0; y < H; y++) {
       const l = 1 - y / (H - 1);
       for (let x = 0; x < W; x++) {
         const color = space.toLinear(((x + 0.5) / W) * 360, 1, l);
         const grey = hslStar.luminance(color);
-        const at = ((k * (H + GAP) + y) * width + x) * 4;
+        const at = (y * width + x) * 4;
         pixels.set([...hslStar.to8bit(color.map(hslStar.encode)), 255], at);
         pixels.set([...hslStar.to8bit([grey, grey, grey].map(hslStar.encode)), 255], at + (W + GAP) * 4);
       }
     }
+    const top = k * ROW;
+    return [
+      text(0, top + 10, escape(space.name)),
+      `<image x="0" y="${top + CAPTION}" width="${width}" height="${H}" href="data:image/png;base64,${png(width, H, pixels).toString('base64')}"/>`,
+    ];
   });
-  write('comparison-lightness.png', png(width, height, pixels));
+  write('comparison-lightness.svg', svg(width, SPACES.length * ROW - SPACE, [`<g ${FONT}>`, body, '</g>']));
 }
 
 // A PNG, 8-bit RGBA, no filtering.

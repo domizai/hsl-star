@@ -187,30 +187,11 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 - **L\* has known limits.** It doesn't model the Helmholtz–Kohlrausch effect, so very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
 
-# HSLuv, Okhsl and HSL*
+- **The tables make the files large.** The corrections are read from generated tables, mostly the hue shift's 5,760 values, so `hsl-star.js` is about 100 KB, or about 23 KB minified and compressed, and `hsl-star.glsl` about 105 KB. In a shader, that's a large constant array to compile. On the HSV hue axis the hue shift isn't used, but the table is still part of the file.
 
-All three give an HSL-like interface with perceptually meaningful lightness and saturation limited to the sRGB gamut. They differ in where hue and saturation come from, and how much work the gamut boundary takes.
+# Comparison
 
-HSL, Okhsl and HSL* side by side, in figures and measurements, are in [COMPARISON.md](COMPARISON.md).
-
-| | HSLuv | Okhsl | HSL* |
-|---|---|---|---|
-| Built on | CIELUV | OKLab | sRGB in linear light |
-| Lightness | CIE L* | OKLab lightness with a toe function, close to CIE L* | CIE L* |
-| Rows of equal lightness | Exact | Close | Exact |
-| Hue | CIELUV hue angle | OKLab hue | HSV hue, spaced by OKLab |
-| Hue of tints and shades | Constant in CIELUV | Constant in OKLab | Kept in OKLab within a few tenths of a degree, up to about 4° in the blues |
-| Saturation | CIELUV chroma as a share of the most the gamut allows | Chroma, interpolated through fitted values to behave evenly | Linear mix between grey and the most vivid sRGB color, toned down near grey for the most colorful hues |
-| Gamut boundary | Ray intersected with six lines per lightness | Approximated with fitted functions | Built into the construction |
-| Round trip | Exact, up to rounding (about 10⁻¹³) | Close, within about 10⁻⁷ | Exact, up to rounding (about 10⁻¹⁴) |
-
-**HSLuv** ([hsluv.org](https://www.hsluv.org/math/)) has the same lightness as HSL* and both use CIE L*, so both give rows of exactly equal lightness. But HSLuv defines hue, lightness and chroma in the device-independent CIELUV, and only then limits the result to sRGB. Saturation is the chroma as a share of the maximum at that lightness and hue. That keeps the hue constant through tints and shades, but every conversion goes through XYZ and CIELUV.
-
-HSL* skips both and builds colors directly in RGB, where the gamut boundary is simply one channel at 0 or 1. Its saturation is therefore not chroma. A closed-form correction near grey evens out how colorful the hues look, but saturation stays a share of the gamut, not a measure of colorfulness. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
-
-**Okhsl** ([Björn Ottosson](https://bottosson.github.io/posts/colorpicker/)) uses OKLab for lightness, hue and saturation. Its lightness is OKLab's, adjusted to come close to CIE L*, so rows are close to equally light but not exact. It also only approximates the sRGB gamut boundary. Okhsl tries harder than HSL* to make hue and saturation perceptually consistent, and HSL*'s saturation correction is fitted against it.
-
-The two start from opposite ends. Okhsl builds its colors in OKLab, so hue and colorfulness are perceptual from the start, and approximates the sRGB gamut boundary with fitted polynomials and a Newton-type step. HSL* builds them in sRGB, so the gamut boundary and exact L* come for free, and adds each perceptual property as a correction with its own table, for the OKLab hue axis, the hue shift and the saturation correction. HSL* also undoes itself exactly. What's left of a round trip, about 10⁻¹⁴, is the rounding of 64-bit floating point. So does HSLuv, to about 10⁻¹³. Okhsl's round trip is off by up to 2.6·10⁻⁷ per channel, inherited from OKLab, whose two published matrices aren't exact inverses of each other (measured with ports of the reference implementations, in linear sRGB). That's far below an 8-bit step, but not exact.
+Like HSLuv, HSL* has exact CIE L\*, and like HSL it builds colors directly in sRGB, so the gamut boundary comes for free and the conversion undoes itself exactly. Okhsl makes hue and saturation more perceptually even than HSL* does. How the four compare, in words, figures and measurements, is in [COMPARISON.md](COMPARISON.md).
 
 # References
 

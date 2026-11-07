@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="940" height="140" viewBox="0 0 940 140">
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="188" viewBox="0 0 940 188">
 <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" fill="#8b949e">
 <text x="0" y="22" text-anchor="start" dominant-baseline="middle">HSL</text>
 <rect x="56" y="0" width="70" height="44" fill="#ff0000"/>
@@ -25,55 +25,80 @@
 <text x="831" y="22" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">3.18</text>
 <rect x="870" y="0" width="70" height="44" fill="#ff008d"/>
 <text x="905" y="22" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">3.73</text>
-<text x="0" y="70" text-anchor="start" dominant-baseline="middle">Okhsl</text>
-<rect x="56" y="48" width="70" height="44" fill="#e00000"/>
-<text x="91" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.05</text>
-<rect x="130" y="48" width="70" height="44" fill="#af6000"/>
-<text x="165" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.67</text>
-<rect x="204" y="48" width="70" height="44" fill="#917300"/>
-<text x="239" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.50</text>
-<rect x="278" y="48" width="70" height="44" fill="#6c8200"/>
-<text x="313" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.34</text>
-<rect x="352" y="48" width="70" height="44" fill="#009035"/>
-<text x="387" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.18</text>
-<rect x="426" y="48" width="70" height="44" fill="#008b77"/>
-<text x="461" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.25</text>
-<rect x="500" y="48" width="70" height="44" fill="#008696"/>
-<text x="535" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.31</text>
-<rect x="574" y="48" width="70" height="44" fill="#007fba"/>
-<text x="609" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.41</text>
-<rect x="648" y="48" width="70" height="44" fill="#3763ff"/>
-<text x="683" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.78</text>
-<rect x="722" y="48" width="70" height="44" fill="#8f31ff"/>
-<text x="757" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.19</text>
-<rect x="796" y="48" width="70" height="44" fill="#c000c2"/>
-<text x="831" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.21</text>
-<rect x="870" y="48" width="70" height="44" fill="#d60075"/>
-<text x="905" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.10</text>
-<text x="0" y="118" text-anchor="start" dominant-baseline="middle">HSL*</text>
-<rect x="56" y="96" width="70" height="44" fill="#ef0000"/>
-<text x="91" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="130" y="96" width="70" height="44" fill="#b36200"/>
-<text x="165" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="204" y="96" width="70" height="44" fill="#927300"/>
-<text x="239" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="278" y="96" width="70" height="44" fill="#6a8000"/>
-<text x="313" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="352" y="96" width="70" height="44" fill="#008a32"/>
-<text x="387" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="426" y="96" width="70" height="44" fill="#008673"/>
-<text x="461" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="500" y="96" width="70" height="44" fill="#008392"/>
-<text x="535" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="574" y="96" width="70" height="44" fill="#007eb9"/>
-<text x="609" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="648" y="96" width="70" height="44" fill="#4468ff"/>
-<text x="683" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="722" y="96" width="70" height="44" fill="#9549ff"/>
-<text x="757" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="796" y="96" width="70" height="44" fill="#d200d4"/>
-<text x="831" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
-<rect x="870" y="96" width="70" height="44" fill="#e6007e"/>
-<text x="905" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<text x="0" y="70" text-anchor="start" dominant-baseline="middle">HSLuv</text>
+<rect x="56" y="48" width="70" height="44" fill="#ef0000"/>
+<text x="91" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="130" y="48" width="70" height="44" fill="#b36200"/>
+<text x="165" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="204" y="48" width="70" height="44" fill="#927300"/>
+<text x="239" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="278" y="48" width="70" height="44" fill="#6a8000"/>
+<text x="313" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="352" y="48" width="70" height="44" fill="#008a32"/>
+<text x="387" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="426" y="48" width="70" height="44" fill="#008673"/>
+<text x="461" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="500" y="48" width="70" height="44" fill="#008392"/>
+<text x="535" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="574" y="48" width="70" height="44" fill="#007eb9"/>
+<text x="609" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="648" y="48" width="70" height="44" fill="#6461ff"/>
+<text x="683" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="722" y="48" width="70" height="44" fill="#9649ff"/>
+<text x="757" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="796" y="48" width="70" height="44" fill="#d200d4"/>
+<text x="831" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="870" y="48" width="70" height="44" fill="#e6007e"/>
+<text x="905" y="70" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<text x="0" y="118" text-anchor="start" dominant-baseline="middle">Okhsl</text>
+<rect x="56" y="96" width="70" height="44" fill="#e00000"/>
+<text x="91" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.05</text>
+<rect x="130" y="96" width="70" height="44" fill="#af6000"/>
+<text x="165" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.67</text>
+<rect x="204" y="96" width="70" height="44" fill="#917300"/>
+<text x="239" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.50</text>
+<rect x="278" y="96" width="70" height="44" fill="#6c8200"/>
+<text x="313" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.34</text>
+<rect x="352" y="96" width="70" height="44" fill="#009035"/>
+<text x="387" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.18</text>
+<rect x="426" y="96" width="70" height="44" fill="#008b77"/>
+<text x="461" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.25</text>
+<rect x="500" y="96" width="70" height="44" fill="#008696"/>
+<text x="535" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.31</text>
+<rect x="574" y="96" width="70" height="44" fill="#007fba"/>
+<text x="609" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.41</text>
+<rect x="648" y="96" width="70" height="44" fill="#3763ff"/>
+<text x="683" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.78</text>
+<rect x="722" y="96" width="70" height="44" fill="#8f31ff"/>
+<text x="757" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.19</text>
+<rect x="796" y="96" width="70" height="44" fill="#c000c2"/>
+<text x="831" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.21</text>
+<rect x="870" y="96" width="70" height="44" fill="#d60075"/>
+<text x="905" y="118" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">5.10</text>
+<text x="0" y="166" text-anchor="start" dominant-baseline="middle">HSL*</text>
+<rect x="56" y="144" width="70" height="44" fill="#ef0000"/>
+<text x="91" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="130" y="144" width="70" height="44" fill="#b36200"/>
+<text x="165" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="204" y="144" width="70" height="44" fill="#927300"/>
+<text x="239" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="278" y="144" width="70" height="44" fill="#6a8000"/>
+<text x="313" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="352" y="144" width="70" height="44" fill="#008a32"/>
+<text x="387" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="426" y="144" width="70" height="44" fill="#008673"/>
+<text x="461" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="500" y="144" width="70" height="44" fill="#008392"/>
+<text x="535" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="574" y="144" width="70" height="44" fill="#007eb9"/>
+<text x="609" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="648" y="144" width="70" height="44" fill="#4468ff"/>
+<text x="683" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="722" y="144" width="70" height="44" fill="#9549ff"/>
+<text x="757" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="796" y="144" width="70" height="44" fill="#d200d4"/>
+<text x="831" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
+<rect x="870" y="144" width="70" height="44" fill="#e6007e"/>
+<text x="905" y="166" text-anchor="middle" dominant-baseline="middle" fill="#ffffff">4.48</text>
 </g>
 </svg>
