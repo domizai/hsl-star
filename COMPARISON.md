@@ -29,13 +29,11 @@ HSLuv, Okhsl and HSL* give an HSL-like interface with perceptually meaningful li
 | Gamut boundary | Built into the construction | Ray intersected with six lines per lightness | Approximated with fitted functions | Built into the construction |
 | Round trip | Exact, up to rounding (about 10⁻¹⁵) | Exact, up to rounding (about 10⁻¹³) | Close, within about 10⁻⁶ | Exact, up to rounding (about 10⁻¹⁴) |
 
-**HSLuv** ([hsluv.org](https://www.hsluv.org/math/)) has the same lightness as HSL* and both use CIE L*, so both give rows of exactly equal lightness. But HSLuv defines hue, lightness and chroma in the device-independent CIELUV, and only then limits the result to sRGB. Saturation is the chroma as a share of the maximum at that lightness and hue. That keeps the CIELUV hue constant through tints and shades, but every conversion goes through XYZ and CIELUV. And a constant CIELUV hue is a straight line towards white in the chromaticity diagram, which is where mixing with white in linear light leads. So HSLuv's tints drift in hue much like HSL's (see [the hue of tints](#the-hue-of-tints-and-shades)).
+**HSLuv** ([hsluv.org](https://www.hsluv.org/math/)) defines hue, lightness and chroma in the device-independent CIELUV, and only then limits the result to sRGB. Saturation is the chroma as a share of the maximum at that lightness and hue. That keeps the CIELUV hue constant through tints and shades, but every conversion goes through XYZ and CIELUV, and the tints still drift in hue (see [the hue of tints](#the-hue-of-tints-and-shades)).
 
-HSL* skips both and builds colors directly in RGB, where the gamut boundary is simply one channel at 0 or 1. Its saturation is therefore not chroma. A closed-form correction near grey evens out how colorful the hues look, but saturation stays a share of the gamut, not a measure of colorfulness. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
+**Okhsl** ([Björn Ottosson](https://bottosson.github.io/posts/colorpicker/)) uses OKLab for lightness, hue and saturation, with OKLab's lightness adjusted to come close to CIE L*. So hue and colorfulness are perceptual from the start, and the sRGB gamut boundary is approximated with fitted polynomials and a Newton-type step. Okhsl tries harder than HSL* to make hue and saturation perceptually consistent.
 
-**Okhsl** ([Björn Ottosson](https://bottosson.github.io/posts/colorpicker/)) uses OKLab for lightness, hue and saturation. Its lightness is OKLab's, adjusted to come close to CIE L*, so rows are close to equally light but not exact. It also only approximates the sRGB gamut boundary. Okhsl tries harder than HSL* to make hue and saturation perceptually consistent.
-
-The two start from opposite ends. Okhsl builds its colors in OKLab, so hue and colorfulness are perceptual from the start, and approximates the sRGB gamut boundary with fitted polynomials and a Newton-type step. HSL* builds them in sRGB, so the gamut boundary and exact L* come for free, and adds each perceptual property as a correction with its own table, for the OKLab hue axis, the hue shift and the saturation correction. HSL* also undoes itself exactly, up to the rounding of 64-bit floating point, and so does HSLuv. Okhsl doesn't quite (see [round trip and speed](#round-trip-and-speed)).
+**HSL\*** starts from the other end. It builds colors directly in sRGB, where the gamut boundary is simply one channel at 0 or 1, so the boundary and exact L* come for free. Each perceptual property is added as a correction with its own table, for the OKLab hue axis, the hue shift and the saturation correction. Its saturation is therefore not chroma. The correction near grey evens out how colorful the hues look, but saturation stays a share of the gamut. That's the price of the simplicity, and a deliberate choice so that the construction is easy to implement and to invert exactly.
 
 ## How they are compared
 
@@ -45,14 +43,13 @@ Each space is used with its own coordinates, a hue in degrees and a saturation a
 
 ![Rows from black to white at six hues, HSL, HSLuv, Okhsl and HSL* below each other](assets/comparison-rows.svg)
 
-Each row runs from lightness 0 to 1 at full saturation. In HSL the pure color always sits in the middle, so the rows of yellow and cyan are already light halfway through and the row of blue is still dark. Light blues turn violet and light reds turn pink. HSLuv, Okhsl and HSL* all put the pure color at its own lightness, so their rows look much alike. The difference is in the tints. HSLuv's light blues turn violet as HSL's do, while Okhsl's and HSL*'s keep their hue. Okhsl's lightness only comes close to L\*, and HSL*'s blues still drift by a few degrees.
+Each row runs from lightness 0 to 1 at full saturation. In HSL the pure color always sits in the middle, so the rows of yellow and cyan are already light halfway through and the row of blue is still dark. Light blues turn violet and light reds turn pink. HSLuv, Okhsl and HSL* all put the pure color at its own lightness, so their rows look much alike. The difference is in the tints. HSLuv's light blues turn violet as HSL's do, while Okhsl's and HSL*'s keep their hue.
 
 ## Lightness
 
 Each space at full saturation, with hue across and white at the top. On the right, the same plane in grey, the luminance of each color. A space whose rows have equal lightness turns into a plain gradient from black to white.
 
 ![The hue–lightness plane of HSL, HSLuv, Okhsl and HSL* at full saturation, each beside its grey conversion](assets/comparison-lightness.svg)
-
 
 The CIE L\* that a row of equal lightness spans over the hue circle, at full saturation:
 
@@ -96,13 +93,13 @@ How much the steps vary (standard deviation over mean), with the smallest and la
 | s 0.5, lightness 0.5 | 42 % (1.7–10.3) | 36 % (2.1–7.6) | 11 % (3.2–4.8) | 20 % (2.1–5.2) |
 | s 0.5, lightness 0.7 | 38 % (1.9–7.4) | 25 % (2.5–5.9) | 8 % (3.2–4.3) | 13 % (2.1–4.3) |
 
-At full saturation HSL\* is about as even as Okhsl, and both are far more even than HSL, whose steps between yellow and green and around blue nearly vanish. HSLuv lies in between. CIELUV crowds the reds and the blues into few degrees of hue, so its steps there are large. At full saturation the gamut sets the limits for all of them. At lower saturation Okhsl is clearly the most even. Its saturation is a share of chroma, so all hues at s 0.5 are about equally colorful, and only the hue changes from bar to bar. HSL\*'s saturation is a share of the gamut, toned down near grey for the most colorful hues, so neighbouring hues can still differ in colorfulness, and that adds to the steps.
+At full saturation HSL\* is about as even as Okhsl, and both far more than HSL, whose steps between yellow and green and around blue nearly vanish. HSLuv lies in between, with large steps in the reds and blues, which CIELUV crowds into few degrees of hue. At lower saturation Okhsl is clearly the most even. Its saturation is a share of chroma, so all hues at s 0.5 are about equally colorful, and only the hue changes from bar to bar. HSL\*'s saturation is a share of the gamut, so neighbouring hues can still differ in colorfulness, and that adds to the steps.
 
 ## Color differences
 
 ![Discs of HSL, HSLuv, Okhsl and HSL* at lightness 0.5 with CIEDE2000 ellipses](assets/comparison-delta-e.svg)
 
-Each space at lightness 0.5 as a disc, with hue round on its own axis (0° at the right, counterclockwise) and saturation out from grey in the middle, the rings at 0.25, 0.5, 0.75 and 1. Around 37 points, each ellipse joins the colors one CIEDE2000 away, drawn twice as large. 
+Each space at lightness 0.5 as a disc, with hue round on its own axis (0° at the right, counterclockwise) and saturation out from grey in the middle, the rings at 0.25, 0.5, 0.75 and 1. Around 37 points, each ellipse joins the colors one CIEDE2000 away, drawn twice as large.
 
 | | HSL | HSLuv | Okhsl | HSL* |
 |---|---:|---:|---:|---:|
@@ -124,7 +121,7 @@ How far the OKLab hue of tints, shades and lower saturations moves away from the
 | Blue | 22.6 | 21.7 | 0.0 | 3.4 |
 | Magenta | −2.4 | −2.7 | 0.0 | 0.0 |
 
-Okhsl keeps the OKLab hue by definition. HSL\*'s hue shift keeps it within about 1.5°, and within 3.5° in the blues, where it's held back so that the conversion stays exactly invertible. HSL moves light blues by more than 20° towards violet and light reds by 12° towards pink, and HSLuv almost exactly as much. Its hue stays constant in CIELUV, which doesn't account for the Abney effect.
+Okhsl keeps the OKLab hue by definition. HSL\*'s hue shift keeps it within about 1.5°, and within 3.5° in the blues, where it's held back so that the conversion stays exactly invertible. HSL moves light blues by more than 20° towards violet and light reds by 12° towards pink, and HSLuv almost exactly as much. HSLuv keeps its CIELUV hue constant, but that's a straight line towards white in the chromaticity diagram, the same path as mixing with white in linear light, so it doesn't correct for the Abney effect.
 
 ## Limits
 
@@ -132,7 +129,7 @@ Okhsl keeps the OKLab hue by definition. HSL\*'s hue shift keeps it within about
 
 The hue circle at full saturation, at lightness 0.4 and 0.9, with the pure colors lined up. At the same lightness, not every hue can be equally colorful in sRGB. At 0.9 the gamut reaches far out only around yellow and cyan, so at full saturation these stand out against pale reds, blues and magentas. At 0.4 it's the other way round, with strong blues, reds and magentas next to olive yellows and dull greens.
 
-HSLuv and Okhsl show the same, because their full saturation is also the edge of the gamut. They trade evenness at full saturation for reaching every color sRGB has. HSL hides it at 0.9 by mixing every hue with the same share of white, which makes its yellows almost white and its blues much darker than them (L\* 98.9 against 83.6). HSL\*'s saturation correction evens out colorfulness near grey, but it never boosts the weak hues and doesn't change full saturation. For colors of about equal colorfulness across hues, stay well below full saturation. More on this in the README's [limitations](README.md#limitations).
+HSLuv, Okhsl and HSL\* all show this, because their full saturation is the edge of the gamut. They trade evenness at full saturation for reaching every color sRGB has. HSL hides it at 0.9 by mixing every hue with the same share of white, which makes its yellows almost white and its blues much darker than them (L\* 98.9 against 83.6). For colors of about equal colorfulness across hues, stay well below full saturation. More on this in the README's [limitations](README.md#limitations).
 
 ## Round trip and speed
 

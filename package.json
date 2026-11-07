@@ -1,7 +1,7 @@
 {
   "name": "hsl-star",
   "version": "0.3.0",
-  "description": "A simple color space built on sRGB, with perceptual lightness, hue and saturation",
+  "description": "A color space built on sRGB, with perceptual lightness, hue and saturation",
   "type": "module",
   "private": true,
   "license": "MIT",
