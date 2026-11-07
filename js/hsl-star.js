@@ -682,13 +682,25 @@ function referenceChroma(l) {
 // The strength r for a hue at lightness l, from its pure color and the
 // vivid color's a and b in basisToLinear: vivid = a * pure + b.
 function strength([p0, p1, p2], a, b, l) {
-  const c = chromaOf(a * p0 + b, a * p1 + b, a * p2 + b);
+  return strengthOf(chromaOf(a * p0 + b, a * p1 + b, a * p2 + b), l);
+}
+
+// The strength r for a vivid color of OKLab chroma c at lightness l.
+function strengthOf(c, l) {
   const c0 = referenceChroma(l);
   if (!(c > c0) || c <= 1e-6) return 1;
   const q = c / c0;
   const x = Math.min(1, (q - 1) / FADE);
   const fade = x * x * (3 - 2 * x);
   return 1 + STRENGTH * fade * (q * Math.sqrt(q) - 1);
+}
+
+// The saturation correction's measure on its own, for showing it: the
+// OKLab chroma of a most vivid color (linear sRGB) at lightness l, the
+// reference chroma there, and the strength it gives.
+export function saturationStrength(vivid, l) {
+  const chroma = chromaOf(...vivid);
+  return { chroma, reference: referenceChroma(l), strength: strengthOf(chroma, l) };
 }
 
 // --- Hue shift ---------------------------------------------------------------
@@ -700,10 +712,10 @@ function strength([p0, p1, p2], a, b, l) {
 // shifted to an x whose color at this lightness and saturation has the
 // pure color's OKLab hue. The pure colors themselves don't move.
 //
-// The shift is tabulated at anchor hues every 15° of HSV hue, each over a
+// The shift is tabulated at anchor hues every 5° of HSV hue, each over a
 // white share w and over s; bilinear between those, linear between anchors.
 // An anchor's w counts from the lightest pure color among it and its two
-// neighbours (0 there and below, 1 at white): along 15° of hue the pure
+// neighbours (0 there and below, 1 at white): along 5° of hue the pure
 // luminance only rises or falls, so every pure color and its shades lie at
 // w = 0 for both anchors around it, where s = 1 has no shift. So the pure
 // colors don't move anywhere. And as w depends only on the anchor, at a
@@ -750,7 +762,7 @@ function anchorShift(k, y, sx) {
   return lo + wf * (hi - lo);
 }
 
-// The shifted position of anchor k, unwrapped: k * 15° plus its shift.
+// The shifted position of anchor k, unwrapped: k * 5° plus its shift.
 const anchorAt = (k, y, sx) => k * SHIFT_STEP + anchorShift(k, y, sx);
 
 // HSV hue x0 to the shifted x, at luminance y and saturation s.
@@ -780,6 +792,21 @@ function unshiftHue(x, y, s) {
     g1 = anchorAt(k + 1, y, sx);
   }
   return wrapHue((k + (x - g0) / (g1 - g0)) * SHIFT_STEP);
+}
+
+// The OKLab axis's hue shift on its own, for showing it: the HSV hue x0
+// of an HSL* hue (toHsvHue) to the HSV hue x the color at lightness l and
+// saturation s is built from. Grey, s = 0, isn't shifted.
+export function shiftHsvHue(x0, l, s) {
+  const sc = clamp(s, 0, 1);
+  return sc > 0 ? shiftHue(wrapHue(x0), yFromLstar(clamp(l, 0, 100)), sc) : wrapHue(x0);
+}
+
+// Its inverse: the HSV hue x0 that shiftHsvHue takes to x at lightness l
+// and saturation s, exactly.
+export function unshiftHsvHue(x, l, s) {
+  const sc = clamp(s, 0, 1);
+  return sc > 0 ? unshiftHue(wrapHue(x), yFromLstar(clamp(l, 0, 100)), sc) : wrapHue(x);
 }
 
 // --- Forward and inverse ----------------------------------------------------

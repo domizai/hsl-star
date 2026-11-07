@@ -155,3 +155,20 @@ test('both hue axes give the same shades for the same hue', () => {
     }
   }
 });
+
+test('saturationStrength measures the vivid color as the conversion does', () => {
+  // At s = 1 the color is the vivid color itself; its strength k then sets
+  // t at s = 0.5 as t = 0.5 / (k + (1 − k) · 0.5), the vivid color's share.
+  for (let h = 0; h < 360; h += 15) {
+    for (const l of [20, 40, 60, 80]) {
+      const vivid = hslStar.toLinear({ h, l, s: 1 }, { hue: 'hsv' });
+      const { chroma, reference, strength } = hslStar.saturationStrength(vivid, l);
+      close(chroma, hslStar.oklabChroma(vivid), 1e-12);
+      close(reference, referenceChroma()[l * 2], 1e-6);
+      const half = hslStar.toLinear({ h, l, s: 0.5 }, { hue: 'hsv' });
+      const y = hslStar.yFromLstar(l);
+      const t = 0.5 / (strength + (1 - strength) * 0.5);
+      half.forEach((v, i) => close(v, t * vivid[i] + (1 - t) * y, 1e-9, `h=${h} l=${l}`));
+    }
+  }
+});

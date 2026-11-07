@@ -68,6 +68,20 @@ export function basisToLinear(basis: HueBasis, l: number, s: number): Rgb;
 
 /** Hue on the given axis to an HSV hue. */
 export function toHsvHue(h: number, options?: HueOptions): number;
+/**
+ * The OKLab axis's hue shift on its own: the HSV hue x0 of an HSL* hue
+ * (toHsvHue) to the HSV hue the color at lightness l and saturation s is
+ * built from. Grey, s = 0, isn't shifted. The HSV axis has no shift.
+ */
+export function shiftHsvHue(x0: number, l: number, s: number): number;
+/** The inverse of shiftHsvHue: the HSV hue x0 it takes to x at lightness l and saturation s. */
+export function unshiftHsvHue(x: number, l: number, s: number): number;
+/**
+ * The saturation correction's measure on its own: for the most vivid color
+ * of a hue at lightness l (linear light), its OKLab chroma Cmax, the
+ * reference chroma C0 at l and the strength k it gives (1 at or below C0).
+ */
+export function saturationStrength(vivid: Rgb, l: number): { chroma: number; reference: number; strength: number };
 /** HSV hue to a hue on the given axis. */
 export function fromHsvHue(h: number, options?: HueOptions): number;
 /** The fully saturated color of an HSV hue (S = V = 1), gamma-encoded. */

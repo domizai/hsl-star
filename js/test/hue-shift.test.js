@@ -88,3 +88,29 @@ test('tints and lower saturations keep their pure color\'s OKLab hue', () => {
   assert.ok(sum / weights < 1, `mean ${(sum / weights).toFixed(2)}°`);
   assert.ok(worst < 10, `worst ${worst.toFixed(2)}°`);
 });
+
+test('shiftHsvHue is the hue the color is built from', () => {
+  for (let h = 0; h < 360; h += 7.5) {
+    for (const l of [10, 40, 70, 95]) {
+      for (const s of [0.2, 0.6, 1]) {
+        const x = hslStar.shiftHsvHue(hslStar.toHsvHue(h), l, s);
+        const built = hslStar.fromLinear(hslStar.toLinear({ h, l, s }), { hue: 'hsv' }).h;
+        const d = Math.abs(((x - built + 540) % 360) - 180);
+        assert.ok(d < 1e-6, `h=${h} l=${l} s=${s}: ${x} vs ${built}`);
+      }
+    }
+  }
+  assert.equal(hslStar.shiftHsvHue(123, 50, 0), 123);
+});
+
+test('unshiftHsvHue undoes shiftHsvHue', () => {
+  for (let x = 0; x < 360; x += 2.5) {
+    for (const l of [5, 30, 60, 90, 99]) {
+      for (const s of [0, 0.05, 0.3, 0.7, 1]) {
+        const back = hslStar.unshiftHsvHue(hslStar.shiftHsvHue(x, l, s), l, s);
+        const d = Math.abs(((back - x + 540) % 360) - 180);
+        assert.ok(d < 1e-9, `x=${x} l=${l} s=${s}: ${back}`);
+      }
+    }
+  }
+});

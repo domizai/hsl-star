@@ -119,6 +119,18 @@ toHsvHue(h: number, options?: HueOptions): number
 // HSV hue to a hue on the given axis
 fromHsvHue(h: number, options?: HueOptions): number
 
+// On the OKLab axis, the HSV hue x0 from toHsvHue shifted for lightness l
+// and saturation s, the HSV hue the color is built from (see the hue shift)
+shiftHsvHue(x0: number, l: number, s: number): number
+
+// Its inverse, the HSV hue x0 that shiftHsvHue takes to x
+unshiftHsvHue(x: number, l: number, s: number): number
+
+// For the most vivid color of a hue at lightness l (linear light), its OKLab
+// chroma, the reference chroma at l and the strength k of the saturation
+// correction (see the saturation correction)
+saturationStrength(vivid: Rgb, l: number): { chroma: number; reference: number; strength: number }
+
 // The fully saturated color of an HSV hue (S = V = 1), gamma-encoded
 pureHue(h: number): Rgb
 

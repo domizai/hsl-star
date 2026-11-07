@@ -47,7 +47,7 @@ H has no closed form, so the implementations tabulate it and interpolate linearl
 
 ## The hue shift
 
-On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, shades and lower saturations keep it. Mixing in white or grey would otherwise move the OKLab hue, by up to 12° in the reds and 22° in the blues, so light blues would drift towards lavender and light reds towards pink. So before the color is built, its HSV hue x₀ = H⁻¹(h) is shifted to x = D(x₀, L*, s), the HSV hue whose color at this lightness and saturation has the pure color's OKLab hue. Pure colors don't move, so h + 180° is still the opposite hue. On the HSV hue axis, D does nothing.
+On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, shades and lower saturations keep it. Mixing in white or grey would otherwise move the OKLab hue, by up to 12° in the reds and 22° in the blues, so light blues would drift towards lavender and light reds towards pink (the Abney effect). So before the color is built, its HSV hue x₀ = H⁻¹(h) is shifted to x = D(x₀, L*, s), the HSV hue whose color at this lightness and saturation has the pure color's OKLab hue. Pure colors don't move, so h + 180° is still the opposite hue. On the HSV hue axis, D does nothing.
 
 1. **Anchors.** Every 5° of HSV hue, at white shares w = 0, 0.1, 0.25, 0.5, 0.75, 0.98 and saturations s = 0.1, 0.25, 0.5, 0.75, 1, the shift is measured directly: the HSV hue at which the anchor's color has its pure color's OKLab hue.
 
