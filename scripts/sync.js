@@ -65,6 +65,8 @@ function tables() {
     '',
     `const int HSL_STAR_SHIFT_ANCHORS = ${360 / SHIFT_STEP};`,
     `const float HSL_STAR_SHIFT_STEP = ${SHIFT_STEP.toFixed(1)};`,
+    `const int HSL_STAR_SHIFT_NW = ${SHIFT_WS.length};`,
+    `const int HSL_STAR_SHIFT_NS = ${SHIFT_SS.length};`,
     `const float HSL_STAR_SHIFT_WS[${SHIFT_WS.length}] = float[](${SHIFT_WS.map((v) => v.toFixed(2)).join(', ')});`,
     `const float HSL_STAR_SHIFT_SS[${SHIFT_SS.length}] = float[](${SHIFT_SS.map((v) => v.toFixed(2)).join(', ')});`,
     '',

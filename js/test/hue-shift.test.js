@@ -37,10 +37,10 @@ test('the HSV axis is not shifted', () => {
 });
 
 test('the shifted anchors keep their order everywhere', () => {
-  // At every L* and s, the colors at the anchor hues (every 5° of HSV hue)
-  // must come out at rising HSV hues, at least a quarter degree per degree
-  // apart; else the inverse wouldn't be unique.
-  const STEP = 5;
+  // At every L* and s, the colors at the anchor hues (every 2.5° of HSV hue)
+  // must come out at rising HSV hues, at least 0.08° per degree apart; else
+  // the inverse wouldn't be unique.
+  const STEP = 2.5;
   const n = 360 / STEP;
   const hs = Array.from({ length: n }, (_, k) => hslStar.fromHsvHue(k * STEP));
   for (let l = 0.5; l < 100; l += 0.5) {
@@ -48,7 +48,7 @@ test('the shifted anchors keep their order everywhere', () => {
       const xs = hs.map((h) => hslStar.fromLinear(hslStar.toLinear({ h, l, s }), { hue: 'hsv' }).h);
       xs.forEach((x, k) => {
         const gap = ((xs[(k + 1) % n] - x + 360) % 360) || 360;
-        assert.ok(gap >= 0.25 * STEP - 1e-6 && gap < 180, `L* ${l}, s ${s.toFixed(2)}: ${k * STEP}° to ${(k + 1) * STEP}° only ${gap.toFixed(3)}° apart`);
+        assert.ok(gap >= 0.08 * STEP - 1e-6 && gap < 180, `L* ${l}, s ${s.toFixed(2)}: ${k * STEP}° to ${(k + 1) * STEP}° only ${gap.toFixed(3)}° apart`);
       });
     }
   }
@@ -83,8 +83,9 @@ test('tints and lower saturations keep their pure color\'s OKLab hue', () => {
       }
     }
   }
-  // Today without the shift: mean 3.3°, worst 21.5°. What's left is mostly
-  // in the blues, where the order of the anchors holds the shift back.
-  assert.ok(sum / weights < 1, `mean ${(sum / weights).toFixed(2)}°`);
-  assert.ok(worst < 10, `worst ${worst.toFixed(2)}°`);
+  // Without the shift: mean 3.3°, worst 21.5°; with it about 0.26° and
+  // 3.7°. What's left is mostly in the blues, where the order of the
+  // anchors holds the shift back.
+  assert.ok(sum / weights < 0.4, `mean ${(sum / weights).toFixed(2)}°`);
+  assert.ok(worst < 5, `worst ${worst.toFixed(2)}°`);
 });

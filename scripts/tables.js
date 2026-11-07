@@ -14,16 +14,16 @@ import { decode, luminance, lstarFromY, oklabChroma, oklabHue, pureHue, toHsvHue
 
 // As in hsl-star.js.
 export const CHROMA_STEPS = 200;
-export const SHIFT_STEP = 5;
-export const SHIFT_WS = [0, 0.1, 0.25, 0.5, 0.75, 0.98];
+export const SHIFT_STEP = 2.5;
+export const SHIFT_WS = [0, 0.02, 0.05, 0.1, 0.25, 0.5, 0.75, 0.98];
 export const SHIFT_SS = [0.1, 0.25, 0.5, 0.75, 1];
 const ANCHORS = 360 / SHIFT_STEP;
 const STRENGTH = 0.6;
 const FADE = 0.25;
 
 // The shifted anchors are kept this far ahead of the one before, per degree
-// between them, while settling the table; the tests check 0.25.
-const REPAIR = 0.27;
+// between them, while settling the table; the tests check 0.08.
+const REPAIR = 0.085;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const wrap = (h) => ((h % 360) + 360) % 360;

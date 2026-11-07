@@ -15,14 +15,14 @@ const close = (a, b, tol, msg) =>
 
 test('reference chroma at some lightnesses', () => {
   const chroma = referenceChroma();
-  const expected = { 10: 0.062211, 25: 0.098101, 40: 0.133992, 50: 0.157919, 60: 0.177863, 75: 0.136866, 90: 0.058028 };
+  const expected = { 10: 0.062211, 25: 0.098101, 40: 0.133992, 50: 0.157919, 60: 0.177910, 75: 0.136877, 90: 0.058026 };
   for (const [l, c] of Object.entries(expected)) close(chroma[l * 2], c, 1e-6, `L* ${l}`);
 });
 
 test('reference colors', () => {
   const cases = [
     [264, 40, 0.2, '#5f5a7c'],
-    [264, 40, 0.5, '#6351a7'],
+    [264, 40, 0.5, '#6350a6'],
     [300, 60, 0.3, '#ad83ab'],
     [30, 60, 0.3, '#a38c7b'],
     [110, 85, 0.25, '#cdd7cc'],

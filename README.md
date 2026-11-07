@@ -24,8 +24,6 @@ HSL in the top row, HSL* in the bottom row, each at full saturation and converte
 
 Currently there is only a [JavaScript](js/README.md) and a [GLSL](glsl/README.md) implementation.
 
-Since version 0.3.0, saturation is corrected near grey (see [the saturation correction](#the-saturation-correction)), and on the OKLab hue axis tints, shades and lower saturations keep their pure color's hue (see [the hue shift](#the-hue-shift)). Coordinates saved with an earlier version give a different color for most tints and for strongly colorful hues at low saturation. See the [changelog](CHANGELOG.md).
-
 # The HSL* color space 
 
 HSL* replaces the lightness of HSL with CIE L*, defines saturation relative to the sRGB gamut at a given hue and lightness, evened out near grey, and spaces its hue by OKLab. 
@@ -49,9 +47,9 @@ H has no closed form, so the implementations tabulate it and interpolate linearl
 
 On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, shades and lower saturations keep it. Mixing in white or grey would otherwise move the OKLab hue, by up to 12° in the reds and 22° in the blues, so light blues would drift towards lavender and light reds towards pink (the Abney effect). So before the color is built, its HSV hue x₀ = H⁻¹(h) is shifted to x = D(x₀, L*, s), the HSV hue whose color at this lightness and saturation has the pure color's OKLab hue. Pure colors don't move, so h + 180° is still the opposite hue. On the HSV hue axis, D does nothing.
 
-1. **Anchors.** Every 5° of HSV hue, at white shares w = 0, 0.1, 0.25, 0.5, 0.75, 0.98 and saturations s = 0.1, 0.25, 0.5, 0.75, 1, the shift is measured directly: the HSV hue at which the anchor's color has its pure color's OKLab hue.
+1. **Anchors.** Every 2.5° of HSV hue, at white shares w = 0, 0.02, 0.05, 0.1, 0.25, 0.5, 0.75, 0.98 and saturations s = 0.1, 0.25, 0.5, 0.75, 1, the shift is measured directly: the HSV hue at which the anchor's color has its pure color's OKLab hue. The white shares lie closest together near 0, because the first bit of white moves the hue the most, most of all in the blues.
 
-2. **White share.** An anchor counts w from the lightest pure color among it and its two neighbours, with luminance Y<sub>ref</sub>. Along 5° of hue the pure luminance only rises or falls, so every pure color and its shades have w = 0 at both anchors around them, where s = 1 has no shift.
+2. **White share.** An anchor counts w from the lightest pure color among it and its two neighbours, with luminance Y<sub>ref</sub>. Along 2.5° of hue the pure luminance only rises or falls, so every pure color and its shades have w = 0 at both anchors around them, where s = 1 has no shift.
 
    ```math
    w = \max\!\left(0, \frac{Y - Y_{ref}}{1 - Y_{ref}}\right)
@@ -59,7 +57,7 @@ On the OKLab axis, h stands for the OKLab hue of its pure color, and its tints, 
 
 3. **Between anchors.** Bilinear in w and s, linear from one anchor to the next. At a given L* and s every anchor's shift is a number, so x is piecewise linear in x₀, and the inverse finds x₀ from x in one step, exactly.
 
-4. **Order.** For that step to be unique, the shifted anchors must stay in order. Where the blues would need their tints moved past their neighbours', the table holds the shift back, so that every anchor stays at least 0.25° per degree ahead of the one before.
+4. **Order.** For that step to be unique, the shifted anchors must stay in order. Where the blues would need their tints moved past their neighbours', the table holds the shift back, so that every anchor stays at least 0.08° per degree ahead of the one before.
 
 The table isn't fitted. `scripts/tables.js` makes it, and `npm run sync` writes it into both implementations:
 
@@ -67,9 +65,7 @@ The table isn't fitted. `scripts/tables.js` makes it, and `npm run sync` writes 
 - **Ordering.** On a grid of L* and s, wherever two neighbouring shifted anchors come too close, the earlier one is moved down and the later one up, by the smallest change that restores the gap. The pure colors' cells stay. This is repeated until no gap is short any more.
 - **Together with the saturation correction.** The reference chroma of [the saturation correction](#the-saturation-correction) is measured at s = 1, where the shift moves the tints, and the shift below s = 1 is measured with the saturation correction. So the two tables are made in turn until neither changes, which takes two or three rounds.
 
-Weighted by chroma, the OKLab hue of tints and lower saturations stays within 0.7° of the pure color's on average, at worst about 9° in the blues. Without the shift it's 3.3° and 21.5°.
-
-That is consistency with OKLab, not perceived hue as such. Checked against hue-matching experiments (Hung & Berns 1995, Ebner & Fairchild 1998), the shift brings lower saturations and the blues about a quarter closer to the hue observers saw, about as close as OKLab itself, and in the blues closer. For tints at full saturation it changes little on average, a little better for blue and yellow, a little worse for cyan and magenta, where OKLab itself is further from perception than the HSV hue (`experiments/perceptual-hue-consistency/evaluate_shift.py`).
+Weighted by chroma, the OKLab hue of tints and lower saturations stays within 0.3° of the pure color's on average, at worst about 4° in the blues. Without the shift it's 3.3° and 21.5°.
 
 ## The saturation correction
 
@@ -187,17 +183,15 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 - **Saturation is only roughly even.** The correction evens out colorfulness near grey by toning down the most colorful hues, measured against the median hue, but it never boosts the weak ones. Full saturation doesn't change. s = 1 is still the edge of the sRGB gamut, and at L* 40 a fully saturated blue is more than twice as colorful as a fully saturated yellow, at L* 80 the other way round.
 
-- **Hue is only roughly even.** By default h is the HSV hue re-spaced by OKLab, so equal steps look roughly equal, and the hue shift keeps the OKLab hue for tints, shades and lower saturations, to within about a degree on average. In the blues it's held back to keep the conversion invertible, so light and greyish blues can still drift by several degrees. And OKLab hue isn't perceived hue in every case. The plain HSV hue is available as an option, without the shift.
-
-- **Kinks at six hues.** Saturation 1 follows the edge of the sRGB gamut, which has corners. At red, green and blue for shades and yellow, cyan and magenta for tints, the direction in which a color changes with hue turns abruptly, though the ΔE 2000 per step stays about the same. That's why ΔE 2000 ellipses drawn in HSL* have corners there.
+- **Hue is only roughly even.** By default h is the HSV hue re-spaced by OKLab, so equal steps look roughly equal, and the hue shift keeps the OKLab hue for tints, shades and lower saturations, to within a few tenths of a degree on average. In the blues it's held back to keep the conversion invertible, so blues can still drift by up to about 4°. And OKLab hue isn't perceived hue in every case. The plain HSV hue is available as an option, without the shift.
 
 - **L\* has known limits.** It doesn't model the Helmholtz–Kohlrausch effect, so very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
-
-- **sRGB only.** Display P3 or print would need their own gamut.
 
 # HSLuv, Okhsl and HSL*
 
 All three give an HSL-like interface with perceptually meaningful lightness and saturation limited to the sRGB gamut. They differ in where hue and saturation come from, and how much work the gamut boundary takes.
+
+HSL, Okhsl and HSL* side by side, in figures and measurements, are in [COMPARISON.md](COMPARISON.md).
 
 | | HSLuv | Okhsl | HSL* |
 |---|---|---|---|
@@ -205,7 +199,7 @@ All three give an HSL-like interface with perceptually meaningful lightness and 
 | Lightness | CIE L* | OKLab lightness with a toe function, close to CIE L* | CIE L* |
 | Rows of equal lightness | Exact | Close | Exact |
 | Hue | CIELUV hue angle | OKLab hue | HSV hue, spaced by OKLab |
-| Hue of tints and shades | Constant in CIELUV | Constant in OKLab | Kept in OKLab within about a degree, more in the blues |
+| Hue of tints and shades | Constant in CIELUV | Constant in OKLab | Kept in OKLab within a few tenths of a degree, up to about 4° in the blues |
 | Saturation | CIELUV chroma as a share of the most the gamut allows | Chroma, interpolated through fitted values to behave evenly | Linear mix between grey and the most vivid sRGB color, toned down near grey for the most colorful hues |
 | Gamut boundary | Ray intersected with six lines per lightness | Approximated with fitted functions | Built into the construction |
 | Round trip | Exact, up to rounding (about 10⁻¹³) | Close, within about 10⁻⁷ | Exact, up to rounding (about 10⁻¹⁴) |
