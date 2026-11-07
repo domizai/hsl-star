@@ -1,5 +1,5 @@
 // Measures and draws the comparisons in COMPARISON.md: HSL, HSLuv, Okhsl
-// and HSL* side by side.
+// and HSL* side by side. Also draws the README's figure of the hue shift.
 //
 //   npm run compare
 //
@@ -464,7 +464,80 @@ function strip(x, y, width, height, colorAt, stops = 96) {
   write('comparison-lightness.svg', svg(width, SPACES.length * ROW - SPACE, [`<g ${FONT}>`, body, '</g>']));
 }
 
-// A PNG, 8-bit RGBA, no filtering.
+// 6. For the README's hue shift: the hue–L* field at full saturation, HSL*
+// hue across on the OKLab axis and L* up, without the shift (each color
+// built from the HSV hue x0 itself). Over it, the lines along which the
+// OKLab hue stays that of a pure color, every 30°, which bend away in the
+// tints, and the pure colors dashed.
+{
+  const W = 960;
+  const H = 240;
+  const TITLE = 24;
+  const SPACE = 16;
+  const ROW = TITLE + H + SPACE;
+  const unshifted = (h, l) => hslStar.toLinear({ h: hslStar.toHsvHue(h), l, s: 1 }, { hue: 'hsv' });
+  const panels = [['Lines of constant OKLab hue', unshifted]];
+  const xOf = (h) => (h / 360) * W;
+  const yOf = (l) => (1 - l / 100) * H;
+
+  // Where in a row of L* l the field has the OKLab hue target, nearest to
+  // the hue h0: a scan in half degrees, then bisection. Unwrapped.
+  function crossing(field, target, h0, l) {
+    const off = (h) => hueDifference(hslStar.oklabHue(field(((h % 360) + 360) % 360, l)), target);
+    let best = null;
+    for (let h = h0 - 60; h < h0 + 60; h += 0.5) {
+      const [a, b] = [off(h), off(h + 0.5)];
+      if (Math.sign(a) === Math.sign(b) || Math.abs(a - b) > 90) continue;
+      let [lo, hi] = [h, h + 0.5];
+      for (let k = 0; k < 30; k++) {
+        const mid = (lo + hi) / 2;
+        if (Math.sign(off(mid)) === Math.sign(a)) lo = mid;
+        else hi = mid;
+      }
+      if (best === null || Math.abs(lo - h0) < Math.abs(best - h0)) best = lo;
+    }
+    return best;
+  }
+
+  const body = panels.map(([title, field], k) => {
+    const top = k * ROW;
+    const fieldTop = top + TITLE;
+    const pixels = new Uint8Array(W * H * 4);
+    for (let y = 0; y < H; y++) {
+      const l = 100 * (1 - (y + 0.5) / H);
+      for (let x = 0; x < W; x++) {
+        pixels.set([...hslStar.to8bit(field(((x + 0.5) / W) * 360, l).map(hslStar.encode)), 255], (y * W + x) * 4);
+      }
+    }
+    // The lines, from black up to just below white, where there's no hue
+    // left to keep; each drawn again a turn to either side, clipped.
+    const lines = Array.from({ length: 12 }, (_, i) => i * 30).map((h0) => {
+      const target = hslStar.oklabHue(hslStar.pureHue(hslStar.toHsvHue(h0)).map(hslStar.decode));
+      const points = [];
+      for (let l = 0.5; l <= 98; l += 0.5) {
+        const h = crossing(field, target, h0, l);
+        if (h !== null) points.push([h, l]);
+      }
+      return [-360, 0, 360].map((turn) => points.map(([h, l]) => `${xOf(h + turn).toFixed(1)},${(fieldTop + yOf(l)).toFixed(1)}`).join(' '));
+    });
+    const pure = Array.from({ length: 721 }, (_, i) => {
+      const h = i / 2;
+      return `${xOf(h).toFixed(1)},${(fieldTop + yOf(hslStar.lstarFromY(hslStar.hueBasis(h).y))).toFixed(1)}`;
+    }).join(' ');
+    return [
+      text(0, top + 10, title),
+      `<clipPath id="field${k}"><rect x="0" y="${fieldTop}" width="${W}" height="${H}"/></clipPath>`,
+      `<image x="0" y="${fieldTop}" width="${W}" height="${H}" href="data:image/png;base64,${png(W, H, pixels).toString('base64')}"/>`,
+      `<g clip-path="url(#field${k})" fill="none">`,
+      `<polyline points="${pure}" stroke="#000" stroke-opacity="0.6" stroke-width="1.25" stroke-dasharray="5 4"/>`,
+      lines.flat().map((points) => `<polyline points="${points}" stroke="#000" stroke-opacity="0.6" stroke-width="1.25"/>`),
+      '</g>',
+    ];
+  });
+  write('hue-shift.svg', svg(W, panels.length * ROW - SPACE, [`<g ${FONT}>`, body, '</g>']));
+}
+
+// A PNG, 8-bit RGBA.
 function png(width, height, pixels) {
   const crcTable = Array.from({ length: 256 }, (_, n) => {
     let c = n;
@@ -488,8 +561,24 @@ function png(width, height, pixels) {
   header.writeUInt32BE(width, 0);
   header.writeUInt32BE(height, 4);
   header.set([8, 6, 0, 0, 0], 8);
-  const raw = Buffer.alloc(height * (width * 4 + 1));
-  for (let y = 0; y < height; y++) Buffer.from(pixels.subarray(y * width * 4, (y + 1) * width * 4)).copy(raw, y * (width * 4 + 1) + 1);
+  // Each row with the Paeth filter, which shrinks smooth gradients a lot.
+  const stride = width * 4;
+  const raw = Buffer.alloc(height * (stride + 1));
+  const paeth = (a, b, c) => {
+    const p = a + b - c;
+    const [pa, pb, pc] = [Math.abs(p - a), Math.abs(p - b), Math.abs(p - c)];
+    return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+  };
+  for (let y = 0; y < height; y++) {
+    raw[y * (stride + 1)] = 4;
+    for (let i = 0; i < stride; i++) {
+      const at = y * stride + i;
+      const left = i >= 4 ? pixels[at - 4] : 0;
+      const up = y > 0 ? pixels[at - stride] : 0;
+      const corner = i >= 4 && y > 0 ? pixels[at - stride - 4] : 0;
+      raw[y * (stride + 1) + 1 + i] = (pixels[at] - paeth(left, up, corner)) & 0xff;
+    }
+  }
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),
