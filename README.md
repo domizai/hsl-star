@@ -203,7 +203,7 @@ All mixing happens in linear light, where luminance is a weighted sum of the cha
 
 - **L\* has known limits.** It doesn't model the Helmholtz–Kohlrausch effect, so very saturated reds, magentas and blues look slightly lighter than a grey with the same L*.
 
-- **The tables make the files large.** The corrections are read from generated tables, mostly the hue shift's 5,760 values, so `hsl-star.js` is about 100 KB, or about 23 KB minified and compressed, and `hsl-star.glsl` about 105 KB. In a shader, that's a large constant array to compile. On the HSV hue axis the hue shift isn't used, but the table is still part of the file.
+- **The tables make the files large.** The corrections are read from generated tables, mostly the hue shift's 5,760 values, so `hsl-star.js` is about 100 KB, or about 23 KB minified and compressed, and `hsl-star.glsl` about 95 KB. In a shader, those are large constant arrays to compile. Some mobile GPUs reject arrays of more than about 4,096 elements, so the shader packs every table four values to a `vec4`, which leaves the hue shift at 1,440 elements. On the HSV hue axis the hue shift isn't used, but the table is still part of the file.
 
 # Comparison
 
